@@ -1,8 +1,5 @@
-
-
-import numpy as np
 import qutip as qt
-import cQED as qc
+from qims.temp import cQED as qc
 import sys
 
 
