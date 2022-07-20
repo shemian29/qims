@@ -1,4 +1,4 @@
-import QMB as qmb
+import qims as qims
 import numpy as np
 from tqdm.notebook import tqdm
 import scipy.sparse
@@ -11,7 +11,7 @@ def TransInd(s, size):
     :param size: system size
     :return:
     """
-    return int(qmb.ind2occ(s, size - 1, size) * (2 ** (size - 1)) - (qmb.ind2occ(s, size - 1, size) / (2)) + s / (2))
+    return int(qims.ind2occ(s, size - 1, size) * (2 ** (size - 1)) - (qims.ind2occ(s, size - 1, size) / (2)) + s / (2))
 
 
 def GenerateMomentumBasis(size, basis):

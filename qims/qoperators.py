@@ -3,11 +3,11 @@ import qutip as qt
 import scipy.sparse
 import tqdm.notebook
 
-import QMB as qmb
+import qims as qims
 
 
 def constr(st, r, size):
-    return (1 - qmb.occ(st, (r - 1) % size, size)) * (1 - qmb.occ(st, (r + 1) % size, size))
+    return (1 - qims.occ(st, (r - 1) % size, size)) * (1 - qims.occ(st, (r + 1) % size, size))
 
 
 def pxp(st, r, size):
@@ -48,6 +48,6 @@ def sz_neel(basis, size):
     row = np.arange(0, len(basis))
     col = np.arange(0, len(basis))
     neel = 2 * np.array([np.ones(int(size / 2)), np.zeros(int(size / 2))]).T.flatten() - 1
-    data = np.array([np.sum(neel * (2 * qmb.ind2state(basis[r], size) - 1)) for r in range(len(basis))])
+    data = np.array([np.sum(neel * (2 * qims.ind2state(basis[r], size) - 1)) for r in range(len(basis))])
 
     return qt.Qobj(scipy.sparse.csr_matrix((data, (row, col)), shape=(len(basis), len(basis))))
