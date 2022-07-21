@@ -82,7 +82,7 @@ def Kick_Z(t, args):
             2 * args['width'] ** 2))
     return sm
 
-def FloquetSpectrum(qb, q_prms, d_prms):
+def FloquetSpectrum(qb, q_prms, d_prms, nsteps):
     """
     :param prms:
     :param qb:
@@ -95,7 +95,7 @@ def FloquetSpectrum(qb, q_prms, d_prms):
                 [sy, lambda t, args: Kick_Y(t, args)], \
                 [sz, lambda t, args: Kick_Z(t, args)]]
     options = qt.Options()
-    options.nsteps = 1000000000
-    return qt.floquet_modes(HFloquet, args['period'], args=args)
+    options.nsteps = nsteps
+    return qt.floquet_modes(HFloquet, args['period'], args=args, options=options)
 
 
