@@ -25,7 +25,7 @@ def qubit_hamiltonian(qb, prms):
         ph_ext = prms[1]
         B = 2 * 2 * np.pi * (ph_ext - 0.5) * fluxonium.EL * np.abs(
             (est.dag() * qt.Qobj(fluxonium.phi_operator()) * gst).full()[0, 0])
-        H0 =0.5*( (Delta / 2) * sx + (B / 2) * sz)
+        H0 =( (Delta / 2) * sx + (B / 2) * sz)
 
     return H0
 
