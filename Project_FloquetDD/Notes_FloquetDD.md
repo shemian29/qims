@@ -3,6 +3,8 @@
 
 ## Things to consider:
 
+- All dynamical decoupling unitaries are candidates to reduce dephasing
+- 
 - There are two possible choices of qubits: 
   - The original qubit states, in which case the pulses implement dynamical decoupling. In principle, for this to happen there needs to be a sense in which the 
   - The Floquet eigenstates, in which case the pulses modulate the quasi-energy spectrum
