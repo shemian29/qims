@@ -54,7 +54,7 @@ def GenerateBasis(size, bc = "periodic", parallel = True):
             Basis = [Basis[r] for r in range(len(Basis)) if Basis[r] > -0.5]
         elif bc == "open":
             Basis = []
-            for r in tqdm(range(2 ** size)):
+            for r in range(2 ** size):
                 st = ind2state(r, size)
 
                 inds = dot(st[0:size-1], st[1:size])
@@ -72,7 +72,7 @@ def GenerateBasis(size, bc = "periodic", parallel = True):
 
         elif bc == "open":
             Basis = []
-            for r in tqdm(range(2 ** size)):
+            for r in range(2 ** size):
                 st = ind2state(r, size)
 
                 inds = dot(st[0:size-1], st[1:size])
