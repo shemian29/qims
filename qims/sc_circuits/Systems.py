@@ -1,20 +1,25 @@
 
 
 import numpy as np
+import scqubits as scq
+import qutip as qt
 
+sx = qt.sigmax()
+sy = qt.sigmay()
+sz = qt.sigmaz()
 
-def qubit_hamiltonian(qb, prms):
+def qubit_hamiltonian(prms):
     """
         a
     :param qb:
     :return:
     """
-    if qb == 'fluxonium':
+    if prms["h0"] == 'fluxonium':
         fluxonium = scq.Fluxonium(EJ=4,
                                   EC=0.5,
                                   EL=1.3,
                                   flux=0.5,
-                                  cutoff=prms[0])
+                                  cutoff=prms["cutoff"])
 
         # Setup of fluxonium qubit
         evals, evecs = fluxonium.eigensys()
@@ -22,12 +27,12 @@ def qubit_hamiltonian(qb, prms):
         est = qt.Qobj(evecs.T[1])
         Delta = evals[1] - evals[0]
 
-        ph_ext = prms[1]
+        ph_ext = prms["flux"]
         B = 2 * 2 * np.pi * (ph_ext - 0.5) * fluxonium.EL * np.abs(
             (est.dag() * qt.Qobj(fluxonium.phi_operator()) * gst).full()[0, 0])
         H0 =( (Delta / 2) * sx + (B / 2) * sz)
 
-    return H0
+    return 2*np.pi*H0
 
 
 
