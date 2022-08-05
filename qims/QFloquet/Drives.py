@@ -5,20 +5,26 @@ sx = qt.sigmax()
 sy = qt.sigmay()
 sz = qt.sigmaz()
 
-DD_protocols = {'Free': [0 * qt.identity(2)],
-                'UDDy9': [sy, sy, sy, sy, sy, sy, sy, sy, sy],
-                'Chiral': [sy],
-                'SH': [sy, -sy],
-                'sCPMG': [sy, sy, -sy, -sy],
-                'EDD': [sx, sy, sx, sy, sy, sx, sy, sx],
-                'XY4': [sy, sx, sy, sx],
-                'RGA8a': [sx, -sy, sx, -sy, sy, -sx, sy, -sx],
-                'RGA4': [-sy, sx, -sy, sx],
-                'RGA4p': [-sy, -sx, -sy, -sx],
-                'SE': [sx, sy, sx, sy, sy, sx, sy, sx, \
-                       -sx, -sy, -sx, -sy, -sy, -sx, -sy, -sx]
-                }
+def extract_oploc(op,prms):
+    return np.where(np.array([(prms["op_data"]["op_sequence"][r]-op).norm() for r in range(len(prms["op_data"]["op_sequence"]))])==0.0)[0]
 
+
+def dd_protocols(choice):
+
+    DD_protocols = {'Free': [0 * qt.identity(2)],
+                    'UDDy9': [sy, sy, sy, sy, sy, sy, sy, sy, sy],
+                    'Chiral': [sy],
+                    'SH': [sy, -sy],
+                    'sCPMG': [sy, sy, -sy, -sy],
+                    'EDD': [sx, sy, sx, sy, sy, sx, sy, sx],
+                    'XY4': [sy, sx, sy, sx],
+                    'RGA8a': [sx, -sy, sx, -sy, sy, -sx, sy, -sx],
+                    'RGA4': [-sy, sx, -sy, sx],
+                    'RGA4p': [-sy, -sx, -sy, -sx],
+                    'SE': [sx, sy, sx, sy, sy, sx, sy, sx, \
+                           -sx, -sy, -sx, -sy, -sy, -sx, -sy, -sx]
+                    }
+    return DD_protocols[choice]
 
 
 def drive_sx(t, prms):
@@ -54,5 +60,3 @@ def drive_sz(t, prms):
 
     return sm
 
-def extract_oploc(op,prms):
-    return np.where(np.array([(prms["op_data"]["op_sequence"][r]-op).norm() for r in range(len(prms["op_data"]["op_sequence"]))])==0.0)[0]
