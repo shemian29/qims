@@ -3,8 +3,9 @@ from qims.QMB.qoperators import constr, pxp, pxp_hamiltonian, pxp_operators, sz_
 from qims.QMB.qentanglement import ent_entropy, PartBasis
 
 from qims.QFloquet.Spectrum import FloquetSpectrum,flat_dev
-from qims.QFloquet.Drives import drive_sx, drive_sy, drive_sz, extract_oploc
+from qims.QFloquet.Drives import drive_sx, drive_sy, drive_sz, extract_oploc, dd_protocols
 from qims.temp.JJCircuits import JJCircuit
 from qims.QMB.qsymmetry import GenerateMomentumBasis,Hk, TransInd
 
 from qims.temp.JJCircuits import JJCircuit
+from qims.sc_circuits.Systems import qubit_hamiltonian
