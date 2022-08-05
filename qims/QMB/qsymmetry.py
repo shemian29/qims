@@ -119,3 +119,18 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
 
 
     return Hs, U
+
+
+def MomentumEigensystem(Hs, U, size):
+    evecs = {}
+    evals = {}
+    k_list = np.arange(0, size) / size
+    for k in tqdm(k_list):
+
+        # print(k*size,Hs[k].shape[0]/2)
+        evals_temp, evecs_temp = Hs[k].eigenstates()
+        for n in range(len(evals_temp)):
+            evecs[k,n] = qt.Qobj(U[k])*evecs_temp[n]
+            evals[k,n] = evals_temp[n]
+
+    return evals, evecs
