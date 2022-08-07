@@ -4,7 +4,7 @@
 ## Things to consider:
 
 - All dynamical decoupling unitaries are candidates to reduce dephasing
-- 
+- It might be possible to use harmonic drives with Gaussian profiles that mimic Dirac deltas and attempt to correct for finite width
 - There are two possible choices of qubits: 
   - The original qubit states, in which case the pulses implement dynamical decoupling. In principle, for this to happen there needs to be a sense in which the 
   - The Floquet eigenstates, in which case the pulses modulate the quasi-energy spectrum
