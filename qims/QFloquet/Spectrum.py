@@ -36,7 +36,7 @@ def FloquetSpectrum(H0, args, nsteps):
     options.nsteps = nsteps
 
     # Return eigenstates and quasi-energies
-    return qt.floquet_modes(HFloquet, args['period'], args=args, options=options)
+    return qt.floquet_modes(HFloquet, args['period'], args=args, options=options), HFloquet
 
 
 def FloquetSpectrum_Sweep(H0, args, nsteps, sweeps):
