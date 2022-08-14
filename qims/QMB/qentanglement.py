@@ -2,17 +2,12 @@ import qims as qims
 import numpy as np
 from tqdm.notebook import tqdm
 
-
 def PartBasis(size):
     bsl = {}
     bsl_ind = {}
     for l in tqdm(range(1,size)):
         bsl[l], bsl_ind[l] = qims.basis(int(l), parallel = False, bc = "open")
     return bsl, bsl_ind
-
-
-
-
 
 def ent_entropy(Hilbert_k_dims, evecs, basis_ind, partial_basis, size):
 
@@ -34,16 +29,13 @@ def ent_entropy(Hilbert_k_dims, evecs, basis_ind, partial_basis, size):
 
 
     S = {}
-
+    # print("test")
     print("Evaluate entanglement entropy for each momentum, eigenstate and sub-system size:")
     for K in tqdm(k_list):
-
-        for n in range(Hilbert_k_dims[K]):
-
-
+        for l in tqdm(range(1, size)):
+            for n in range(Hilbert_k_dims[K]):
 
 
-            for l in range(1, size):
                 Psi = np.zeros((len(partial_basis[l]), len(partial_basis[size - l])), dtype=complex)
 
                 for inds in PsiInds[l]:
