@@ -1,6 +1,7 @@
 from qims.QMB.qbasis import basis, GenerateBasis, idstates,ind2occ,ind2state,occ,state2ind
-from qims.QMB.qconstrained import constr, pxp, pxp_model #pxp_hamiltonian, pxp_operators, sz_neel
+from qims.QMB.qoperators import constr, pxp, pxp_hamiltonian, pxp_operators, sp, sz_neel #pxp_hamiltonian, pxp_operators, sz_neel
 from qims.QMB.qentanglement import ent_entropy, PartBasis
+
 
 from qims.QFloquet.Spectrum import FloquetSpectrum,flat_dev
 from qims.QFloquet.Drives import drive_sx, drive_sy, drive_sz, extract_oploc, dd_protocols
