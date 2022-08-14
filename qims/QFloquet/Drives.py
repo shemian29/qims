@@ -13,7 +13,7 @@ def dd_protocols(choice):
 
     DD_protocols = {'Free': [0 * qt.identity(2)],
                     'UDDy9': [sy, sy, sy, sy, sy, sy, sy, sy, sy],
-                    'Chiral': [sy],
+                    'Chiral': [sy, sy],
                     'SH': [sy, -sy],
                     'sCPMG': [sy, sy, -sy, -sy],
                     'EDD': [sx, sy, sx, sy, sy, sx, sy, sx],
