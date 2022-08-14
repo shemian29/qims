@@ -2,17 +2,12 @@ import qims as qims
 import numpy as np
 from tqdm.notebook import tqdm
 
-
 def PartBasis(size):
     bsl = {}
     bsl_ind = {}
     for l in tqdm(range(1,size)):
         bsl[l], bsl_ind[l] = qims.basis(int(l), parallel = False, bc = "open")
     return bsl, bsl_ind
-
-
-
-
 
 def ent_entropy(Hilbert_k_dims, evecs, basis_ind, partial_basis, size):
 
