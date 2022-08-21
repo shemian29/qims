@@ -9,5 +9,5 @@ from qims.temp.JJCircuits import JJCircuit
 from qims.QMB.qsymmetry import GenerateMomentumBasis,Hk, TransInd, MomentumEigensystem
 
 from qims.temp.JJCircuits import JJCircuit
-from qims.sc_circuits.Systems import qubit_hamiltonian
+# from qims.sc_circuits.Systems import qubit_hamiltonian
 
