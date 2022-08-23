@@ -41,7 +41,7 @@ def drive_sx(t, prms):
         for tx in prms["sx"]:
             drive_prms = prms["drive_prms"]
             t0 = drive_prms["tlocs"][tx] * prms["period"]
-            if (t0-drive_prms["widths"][tx]/2)<t<(t0+drive_prms["widths"][tx]/2):
+            if (t0)<t<(t0+drive_prms["widths"][tx]):
                 sm = sm + drive_prms['amplitudes'][tx]* np.cos(drive_prms["frequencies"][tx]*t+drive_prms["phases"][tx])
 
 
@@ -60,7 +60,7 @@ def drive_sy(t, prms):
         for ty in prms["sy"]:
             drive_prms = prms["drive_prms"]
             t0 = drive_prms["tlocs"][ty] * prms["period"]
-            if (t0 - drive_prms["widths"][ty] / 2) < t < (t0 + drive_prms["widths"][ty] / 2):
+            if (t0 ) < t < (t0 + drive_prms["widths"][ty] ):
                 sm = sm + drive_prms['amplitudes'][ty] * np.cos(
                     drive_prms["frequencies"][ty] * t + drive_prms["phases"][ty])
 
@@ -80,7 +80,7 @@ def drive_sz(t, prms):
         for tz in prms["sz"]:
             drive_prms = prms["drive_prms"]
             t0 = drive_prms["tlocs"][tz] * prms["period"]
-            if (t0 - drive_prms["widths"][tz] / 2) < t < (t0 + drive_prms["widths"][tz] / 2):
+            if (t0) < t < (t0 + drive_prms["widths"][tz] ):
                 sm = sm + drive_prms['amplitudes'][tz] * np.cos(
                     drive_prms["frequencies"][tz] * t + drive_prms["phases"][tz])
 
