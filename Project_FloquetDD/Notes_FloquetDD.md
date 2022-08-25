@@ -3,6 +3,8 @@
 
 ## Things to consider:
 
+-The important thing is to be able to flatten a small region in parameter space determined by the standard deviation in the fluctuations of the parameter of interest
+
 - All dynamical decoupling unitaries are candidates to reduce dephasing
 - It might be possible to use harmonic drives with Gaussian profiles that mimic Dirac deltas and attempt to correct for finite width
 - There are two possible choices of qubits: 
