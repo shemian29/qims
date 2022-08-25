@@ -3,6 +3,7 @@ import numpy as np
 from tqdm.notebook import tqdm
 import scipy.sparse
 import qutip as qt
+from scipy.sparse import hstack
 
 def TransInd(s, size):
     """
@@ -121,7 +122,7 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
     return Hs, U
 
 
-def MomentumEigensystem(Hs, U, size):
+def MomentumEigensystem(Hs, U, S2, size):
     evecs = {}
     evals = {}
     k_list = np.arange(0, size) / size
@@ -129,8 +130,38 @@ def MomentumEigensystem(Hs, U, size):
 
         # print(k*size,Hs[k].shape[0]/2)
         evals_temp, evecs_temp = Hs[k].eigenstates()
+
+        print("Reorder at: ", k)
+        zrs = evecs_temp[np.ix_(np.where(np.abs(evals_temp) < 10 ** (-10))[0])]
+        print(len(zrs))
+        if len(zrs)!= 0:
+            vtemp = zrs[0]
+            for n in range(1, len(zrs)):
+                vtemp = hstack((vtemp, zrs[n].data))
+            evecs_set = qt.Qobj(vtemp)
+
+            S2_proj = (qt.Qobj(U[k]) * evecs_set).dag() * S2 * qt.Qobj(U[k]) * evecs_set
+            reord = S2_proj.eigenstates()[1]
+
+            vtemp = reord[0]
+            for n in range(1, len(reord)):
+                vtemp = hstack((vtemp, reord[n].data))
+            transf = qt.Qobj(vtemp)
+
+            tmp = [qt.Qobj((evecs_set * transf)[:, r]) for r in range(len(zrs))]
+
+            evecs_temp[np.ix_(np.where(np.abs(evals_temp) < 10 ** (-10))[0])] = tmp
+
+            # chk = np.sum(np.abs(evals_temp - [
+            #     ((qt.Qobj(U[k]) * evecs_temp[r]).dag() * Sx * qt.Qobj(U[k]) * evecs_temp[r])[0, 0] for r in
+            #     range(len(evals_temp))]))
+
+
+
         for n in range(len(evals_temp)):
-            evecs[k,n] = qt.Qobj(U[k])*evecs_temp[n]
+            # evecs[k,n] = qt.Qobj(U[k])*evecs_temp[n]
+            evecs[k, n] = evecs_temp[n]
+
             evals[k,n] = evals_temp[n]
 
     return evals, evecs
