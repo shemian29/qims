@@ -127,11 +127,11 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
         ks = k_list[(q + int(Nx / 2)) % Nx]
 
         mtr = {}
-        vs = qt.Qobj([evecs[k0, n].full().T[0] for n in range(Hs[k0].shape[0])]).dag()
-        vs2 = qt.Qobj([evecs[ks, n].full().T[0] for n in range(Hs[ks].shape[0])]).dag()
+        vs = qt.Qobj([evecs[k0][n].full().T[0] for n in range(Hs[k0].shape[0])]).dag()
+        vs2 = qt.Qobj([evecs[ks][n].full().T[0] for n in range(Hs[ks].shape[0])]).dag()
 
-        mtr[k0] = np.abs((vs2.dag() * qt.Qobj(U[ks]).dag() * TP * qt.Qobj(U[k0]) * vs).full())
-        mtr[ks] = np.abs((vs.dag() * qt.Qobj(U[k0]).dag() * TP * qt.Qobj(U[ks]) * vs2).full())
+        mtr[k0] = np.abs((vs2.dag() * U[ks].dag() * TP * U[k0] * vs).full())
+        mtr[ks] = np.abs((vs.dag() * U[k0].dag() * TP * U[ks] * vs2).full())
 
         indlist = {}
         indlist[k0] = np.arange(U[k0].shape[1])
@@ -143,8 +143,8 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
 
         while sm[k0] > 0 and sm[ks] > 0:
 
-            E0 = evals[k0, indlist[k0][0]]
-            E1 = evals[ks, indlist[ks][0]]
+            E0 = evals[k0][indlist[k0][0]]
+            E1 = evals[ks][indlist[ks][0]]
 
             # print(k0,ks)
             if E0 < E1:
@@ -163,7 +163,7 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
             ind = np.argmax(mtr[kit][:, ind])
             kit = ((int(kit * Nx) + int(Nx / 2)) % Nx) / Nx
             # print(q,kit,ind)
-            Enew = evals[kit, ind]
+            Enew = evals[kit][ind]
 
             while Enew > Eold:
 
@@ -175,7 +175,7 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
                 ind = np.argmax(mtr[kit][:, ind])
                 kit = ((int(kit * Nx) + int(Nx / 2)) % Nx) / Nx
 
-                Enew = evals[kit, ind]
+                Enew = evals[kit][ind]
 
             sm[k0] = len(indlist[k0])
             sm[ks] = len(indlist[ks])
@@ -190,9 +190,9 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
             for r in range(len(tower[q][tw])):
                 k, n = tower[q][tw][r]
                 if r == 0 and tw == 0:
-                    vtemp = (qt.Qobj(U[k]) * evecs[k, n]).data
+                    vtemp = (U[k] * evecs[k][n]).data
                 else:
-                    vtemp = hstack((vtemp, (qt.Qobj(U[k]) * evecs[k, n]).data))
+                    vtemp = hstack((vtemp, (U[k] * evecs[k][n]).data))
         evecs_ordered[q] = qt.Qobj(vtemp)
 
     return evecs_ordered, tower
