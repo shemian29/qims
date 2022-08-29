@@ -80,7 +80,8 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
     Hs = {}
     scan = []
     for k in tqdm(k_list):
-        Hs[k]=(qt.Qobj(U[k]).dag()*hamiltonian*qt.Qobj(U[k]))
+        U[k] = qt.Qobj(U[k])
+        Hs[k]=(U[k].dag()*hamiltonian*U[k])
         scan.append(Hs[k].eigenstates()[0])
     scan = [x for xs in scan for x in xs]
 
@@ -125,6 +126,7 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
 def MomentumEigensystem(Hs, U, S2, size):
     evecs = {}
     evals = {}
+    Ukevecs = {}
     k_list = np.arange(0, size) / size
     for k in tqdm(k_list):
 
@@ -140,7 +142,7 @@ def MomentumEigensystem(Hs, U, S2, size):
                 vtemp = hstack((vtemp, zrs[n].data))
             evecs_set = qt.Qobj(vtemp)
 
-            S2_proj = (qt.Qobj(U[k]) * evecs_set).dag() * S2 * qt.Qobj(U[k]) * evecs_set
+            S2_proj = (U[k] * evecs_set).dag() * S2 * U[k] * evecs_set
             reord = S2_proj.eigenstates()[1]
 
             vtemp = reord[0]
@@ -157,11 +159,13 @@ def MomentumEigensystem(Hs, U, S2, size):
             #     range(len(evals_temp))]))
 
 
-
+        scan = []
         for n in range(len(evals_temp)):
-            # evecs[k,n] = qt.Qobj(U[k])*evecs_temp[n]
-            evecs[k, n] = evecs_temp[n]
+            scan.append(qt.Qobj(U[k])*evecs_temp[n])
+        Ukevecs[k] = scan
 
-            evals[k,n] = evals_temp[n]
+        evecs[k] = evecs_temp
 
-    return evals, evecs
+        evals[k] = evals_temp
+
+    return evals, evecs, Ukevecs
