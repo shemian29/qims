@@ -35,10 +35,10 @@ def ent_entropy(Hilbert_k_dims, evecs,U, basis_ind, partial_basis, size):
     # print("test")
     print("Evaluate entanglement entropy for each momentum, eigenstate and sub-system size:")
     for K in tqdm(k_list):
-        Uk = qt.Qobj(U[K])
+        # Uk = qt.Qobj(U[K])
 
         for n in tqdm(range(Hilbert_k_dims[K])):
-            OP = ((Uk * evecs[K, n]).full().T[0])
+            OP = ((U[K] * evecs[K][n]).full().T[0])
 
             for l in range(1, size):
 
