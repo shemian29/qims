@@ -1,4 +1,3 @@
-import scqubits as scq
 import qutip as qt
 import numpy as np
 
