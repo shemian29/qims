@@ -187,6 +187,7 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
 
 
     evecs_ordered = {}
+    evals_ordered = {}
 
     # for q in tqdm(range(0, int(Nx / 2))):
     for q in range(0, int(Nx / 2)):
@@ -194,10 +195,19 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
         for tw in range(len(tower[q])):
             for r in range(len(tower[q][tw])):
                 k, n = tower[q][tw][r]
+                scan.append(evals[k][n])
                 if r == 0 and tw == 0:
                     vtemp = (U[k] * evecs[k][n]).data
                 else:
                     vtemp = hstack((vtemp, (U[k] * evecs[k][n]).data))
         evecs_ordered[q] = qt.Qobj(vtemp)
+        evals_ordered[q] = np.array(scan)
+
+    return evecs_ordered, evals_ordered, tower
+
+
+
+def npqt2qtqt(vecs):
+    for r in range(len(vecs)):
 
     return evecs_ordered, tower
