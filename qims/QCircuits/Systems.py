@@ -32,7 +32,7 @@ def qubit_hamiltonian(prms):
             (est.dag() * qt.Qobj(fluxonium.phi_operator()) * gst).full()[0, 0])
         H0 =( (Delta / 2) * sx + (B / 2) * sz)
 
-    return 2*np.pi*H0
+    return H0
 
 
 
