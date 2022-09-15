@@ -3,6 +3,8 @@ import numpy as np
 from tqdm.notebook import tqdm
 import qutip as qt
 from scipy.sparse import hstack
+from scipy.sparse import block_diag
+
 
 def ind2occ(s, r, size):
     """
