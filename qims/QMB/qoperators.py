@@ -63,12 +63,19 @@ def pxp_operators(basis, basis_ind, size, prms):
     :return: Hamiltonian as a qutip object
     """
     SP = 0
-    for r in tqdm.notebook.tqdm(range(size)):
+    sp = {}
+    sz = {}
+    prj = {}
+    # for r in tqdm.notebook.tqdm(range(size)):
+    for r in range(size):
         scan = []
+        scanz = []
         for st in range(len(basis)):
             # print()
-
+            scanz.append([st, st, 2 * qims.occ(basis[st], r, size) - 1])
             if constr(basis[st], r, size) == 1:
+
+
 
                 if (r % 2)==0 and 0 == qims.occ(basis[st], r, size):
                     # print(r, qims.ind2state(st, size))
@@ -83,14 +90,118 @@ def pxp_operators(basis, basis_ind, size, prms):
         row = np.array(elms.T[0])
         col = np.array(elms.T[1])
         data = np.array(elms.T[2])
+
+        sp[r] = qt.Qobj(scipy.sparse.csr_matrix((data, (row, col)), shape=(len(basis), len(basis))))
         SP = SP + scipy.sparse.csr_matrix((data, (row, col)), shape=(len(basis), len(basis)))
+
+
+        elms = np.array(scanz)
+
+        row = np.array(elms.T[0])
+        col = np.array(elms.T[1])
+        data = np.array(elms.T[2])
+        sz[r] = qt.Qobj(scipy.sparse.csr_matrix((data, (row, col)), shape=(len(basis), len(basis))))
+        prj[r] = (qt.identity(len(basis))-sz[r])/2
+    Nx = size
+    OP = {}
+
+    sm = 0
+    for r in range(Nx):
+        sm = sm + prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx]
+
+    OP[0] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[(r + 3) % Nx]
+        else:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[(r + 3) % Nx]
+
+    OP[1] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * prj[(r + 3) % Nx]
+        else:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * prj[(r + 3) % Nx]
+
+    OP[2] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx]
+
+    OP[3] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[
+                (r + 3) % Nx]
+        else:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * \
+                 prj[(r + 3) % Nx]
+
+    OP[4] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * prj[
+                (r + 3) % Nx]
+        else:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * \
+                 prj[(r + 3) % Nx]
+
+    OP[5] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[(r + 3) % Nx] * prj[
+                (r + 4) % Nx]
+        else:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[(r + 3) % Nx] * \
+                 prj[(r + 4) % Nx]
+
+    OP[6] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * prj[(r + 3) % Nx] * prj[
+                (r + 4) % Nx]
+        else:
+            sm = sm + prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * prj[(r + 2) % Nx] * prj[(r + 3) % Nx] * \
+                 prj[(r + 4) % Nx]
+
+    OP[7] = sm #+ sm.dag()
+
+    sm = 0
+    for r in range(Nx):
+        if r % 2 == 0:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r])) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * prj[
+                (r + 3) % Nx] * prj[(r + 4) % Nx]
+        else:
+            sm = sm + prj[(r - 2) % Nx] * prj[(r - 1) % Nx] * ((sp[r].dag())) * prj[(r + 1) % Nx] * sz[(r + 2) % Nx] * \
+                 prj[(r + 3) % Nx] * prj[(r + 4) % Nx]
+
+    OP[8] = sm #+ sm.dag()
+
     SP = qt.Qobj(SP)
+    for r in range(len(OP)):
+        SP = SP + prms[r]*OP[r]
+
     Sx = (SP + SP.dag()) / (2*eta)
     Sy = (SP - SP.dag()) / (2 * 1j * eta)
     Sz = 0.5 * (SP * SP.dag() - SP.dag() * SP)/(eta**2)
     S2 = Sx * Sx + Sy * Sy + Sz * Sz
 
-    return Sx, Sy, Sz, S2
+    TP = (Sz - 1j * Sy) / 2
+
+    return Sx, Sy, Sz, S2, OP
 
 
 def sz_neel(basis, size):
