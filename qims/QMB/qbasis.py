@@ -120,7 +120,8 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
     tower = {}
     k_list = np.arange(0, Nx) / Nx
     TP = (Sz - 1j * Sy) / 2
-    for q in tqdm(range(0, int(Nx / 2))):
+    # for q in tqdm(range(0, int(Nx / 2))):
+    for q in range(0, int(Nx / 2)):
         tower[q] = {}
         ind = 0
         it = 0
@@ -187,7 +188,9 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
 
     evecs_ordered = {}
 
-    for q in tqdm(range(0, int(Nx / 2))):
+    # for q in tqdm(range(0, int(Nx / 2))):
+    for q in range(0, int(Nx / 2)):
+        scan = []
         for tw in range(len(tower[q])):
             for r in range(len(tower[q][tw])):
                 k, n = tower[q][tw][r]
