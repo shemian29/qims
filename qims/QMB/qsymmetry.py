@@ -27,7 +27,7 @@ def GenerateMomentumBasis(size, basis):
 
     while len(lst) > 0:
 
-        np.savetxt("Monitor_" + str([size]) + ".txt", [(100 * len(lst) / dms)], fmt='%1.4f')
+        # np.savetxt("Monitor_" + str([size]) + ".txt", [(100 * len(lst) / dms)], fmt='%1.4f')
 
         bas = [lst[0]]
         tmp = TransInd(bas[-1], size)
