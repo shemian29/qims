@@ -54,7 +54,7 @@ def sp(st, r, size):
     return st
 
 
-def pxp_operators(basis, basis_ind, size):
+def pxp_operators(basis, basis_ind, size, prms):
     """
     PXP Hamiltonian
     :param basis: dictionary with mapped basis indices
