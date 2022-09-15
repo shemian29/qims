@@ -46,14 +46,15 @@ def GenerateMomentumBasis(size, basis):
 def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = False):
 
 
-    print("Setup momentum basis")
+    # print("Setup momentum basis")
 
     k_list = np.arange(0, size) / size
     scan = {}
     for kk in k_list:
         scan[kk] = []
     vbs = GenerateMomentumBasis(size, basis)
-    for n in tqdm(range(len(vbs))):
+    # for n in tqdm(range(len(vbs))):
+    for n in range(len(vbs)):
 
         ktemp_list = np.arange(0, len(vbs[n])) / len(vbs[n])
         inds = list(map(basis_ind.get, vbs[n]))
@@ -63,9 +64,10 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
             scan[kk].append([inds, phs])
 
 
-    print("Calculating k-basis transformations")
+    # print("Calculating k-basis transformations")
     U = {}
-    for kk in tqdm(k_list):
+    # for kk in tqdm(k_list):
+    for kk in k_list:
         # print('---------------------------')
         U[kk] = 0
         for n in range(len(scan[kk])):
@@ -76,10 +78,11 @@ def Hk(hamiltonian, basis, basis_ind,size, check_symm = False, check_spect = Fal
             U[kk] = U[kk] + scipy.sparse.csr_matrix((data, (row, col)), shape=(len(scan[kk]), \
                                                                                len(basis))).T
 
-    print("Calculate momentum Hamiltonians")
+    # print("Calculate momentum Hamiltonians")
     Hs = {}
     scan = []
-    for k in tqdm(k_list):
+    # for k in tqdm(k_list):
+    for k in k_list:
         U[k] = qt.Qobj(U[k])
         Hs[k]=(U[k].dag()*hamiltonian*U[k])
         scan.append(Hs[k].eigenstates()[0])
@@ -128,14 +131,14 @@ def MomentumEigensystem(Hs, U, S2, size):
     evals = {}
     Ukevecs = {}
     k_list = np.arange(0, size) / size
-    for k in tqdm(k_list):
-
+    # for k in tqdm(k_list):
+    for k in k_list:
         # print(k*size,Hs[k].shape[0]/2)
         evals_temp, evecs_temp = Hs[k].eigenstates()
 
-        print("Reorder at: ", k)
+        # print("Reorder at: ", k)
         zrs = evecs_temp[np.ix_(np.where(np.abs(evals_temp) < 10 ** (-10))[0])]
-        print(len(zrs))
+        # print(len(zrs))
         if len(zrs)!= 0:
             vtemp = zrs[0]
             for n in range(1, len(zrs)):
