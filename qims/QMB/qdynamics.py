@@ -28,8 +28,28 @@ def SytSy(Sy, bs, Nx, Ukevecs, evals):
         Skkpaux_k = Skkp.dag() * aux_k.dag()
         Skkpaux_kp = Skkp * aux_kp.dag()
 
-for n in tqdm(range(len(bs[nx]))):
-    ProdSt = qt.basis(len(bs[nx]), n)
-    sol[nx, n] = qt.krylovsolve(HQ, ProdSt, t_list, krylov_dim=20, e_ops=[SZ])
-    qt.qsave(sol, 'sol_0')
-    np.savetxt('Monitor_0.txt', [100 * n / len(bs[nx])], fmt='%1.2f')
+        rand_aux_k = (sts_rand.dag()) * aux_k
+        rand_aux_kp = (sts_rand.dag()) * aux_kp
+        rand_Skkpaux_k = Skkp.dag() * aux_k.dag() * (sts_rand)
+        rand_Skkpaux_kp = Skkp * aux_kp.dag() * (sts_rand)
+
+        for t in tqdm(tlist):
+            phase_k = qt.Qobj(np.diag(np.exp(1j * evals[k] * t)))
+            phase_kp = qt.Qobj(np.diag(np.exp(-1j * evals[kit] * t)))
+
+            phkkp = phase_k * Skkp * phase_kp
+            t1 = aux_k.full()
+            t2 = (phkkp * Skkpaux_k).full()
+            Corr3[k, t] = np.sum(t1.T * t2, axis=0)
+            t1 = aux_kp.full()
+            t2 = (phkkp.dag() * Skkpaux_kp).full()
+            Corr3[kit, t] = np.sum(t1.T * t2, axis=0)
+
+            t1 = (rand_aux_k).full()
+            t2 = (phkkp * rand_Skkpaux_k).full()
+            Corrrand[k, t] = np.sum(t1.T * t2, axis=0)
+            t1 = (rand_aux_kp).full()
+            t2 = (phkkp.dag() * rand_Skkpaux_kp).full()
+            Corrrand[kit, t] = np.sum(t1.T * t2, axis=0)
+
+    return Corr3, Corrrand, tlist, wlist
