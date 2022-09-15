@@ -210,4 +210,33 @@ def Towers(evals,evecs, Hs, U, Sz, Sy, Nx):
 def npqt2qtqt(vecs):
     for r in range(len(vecs)):
 
-    return evecs_ordered, tower
+        if r == 0:
+            vtemp = (vecs[r]).data
+        else:
+            vtemp = hstack((vtemp, (vecs[r]).data))
+
+    return qt.Qobj(vtemp)
+
+
+def error(evecs_ordered, evals, towers,Nx ,Sz, Sy, Sx):
+
+    sm = 0
+
+    for q in range(0, int(Nx / 2)):
+    # for q in [0]:
+        ws = []
+        for r in range(len(towers[q])):
+            scan = []
+            for ind in towers[q][r]:
+                scan.append(evals[ind[0]][ind[1]])
+            if len(scan)>1:
+                ws.append((np.mean(np.diff(scan))*qt.identity(len(scan))).data)
+            else:
+                ws.append(0)
+        Omega = qt.Qobj(block_diag(ws).tocsr())
+
+        Tp = (evecs_ordered[q].dag()*((Sz - 1j * Sy) / 2)*evecs_ordered[q])
+        EE = (evecs_ordered[q].dag()*(Sx)*evecs_ordered[q])
+
+        sm = sm + np.sum(np.abs(((EE*Tp-Tp*EE)-Omega*Tp).full()))
+    return sm
