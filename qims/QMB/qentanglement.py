@@ -32,6 +32,7 @@ def ent_entropy(Hilbert_k_dims, Ukevecs, basis, basis_ind, partial_basis, size, 
             # print(PsiInds[l])
 
     S = {}
+    flag = 0
     # print("test")
     print("Evaluate entanglement entropy for each momentum, eigenstate and sub-system size:")
     for K in tqdm(k_list):
@@ -62,6 +63,28 @@ def ent_entropy(Hilbert_k_dims, Ukevecs, basis, basis_ind, partial_basis, size, 
 
 
                 S[K, n, l] = -np.dot(s ** 2, np.log(s ** 2))
+
+
+
+                if check and size <=10:
+                    v = np.zeros(2 ** size, dtype=complex)
+                    v[[basis[r] for r in range(len(basis))]] = Ukevecs[K][n].full().T[0]
+                    v = qt.Qobj(v, dims=[(2 * np.ones(size, dtype=int)).tolist(), [1]])
+
+                    lmbds = 10**(-20)+v.ptrace(tuple(np.arange(0,l))).eigenenergies()
+                    lmbds = [lmbds[r] for r in range(len(lmbds)) if lmbds[r]>0]
+                    tmp = np.abs(-np.dot(lmbds, np.log(lmbds)) - S[K, n, l])
+                    flag = 1
+                    if tmp > 10**(-10):
+                        print("Error: ",tmp, [K,n,l])
+                        flag = 2
+
+    if flag == 1:
+        print("Successful check: calculation matches in two independent ways")
+    elif flag == 2:
+        print("Checks done: WARNING ERRORS FOUND")
+    else:
+        print("No checks performed, either by choice or system size was too large")
 
     return S
 
