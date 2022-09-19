@@ -38,7 +38,8 @@ def ent_entropy(Hilbert_k_dims, evecs,U, basis_ind, partial_basis, size):
         # Uk = qt.Qobj(U[K])
 
         for n in tqdm(range(Hilbert_k_dims[K])):
-            OP = ((U[K] * evecs[K][n]).full().T[0])
+            # OP = ((U[K] * evecs[K][n]).full().T[0])
+            OP = Ukevecs[K][n].full().T[0]
 
             for l in range(1, size):
 
