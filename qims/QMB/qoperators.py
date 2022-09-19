@@ -194,12 +194,23 @@ def pxp_operators(basis, basis_ind, size, prms):
     for r in range(len(OP)):
         SP = SP + prms[r]*OP[r]
 
-    Sx = (SP + SP.dag()) / (2*eta)
-    Sy = (SP - SP.dag()) / (2 * 1j * eta)
-    Sz = 0.5 * (SP * SP.dag() - SP.dag() * SP)/(eta**2)
+
+
+    Sx = (SP + SP.dag())
+    lmbd = np.abs(Sx.groundstate()[0])
+
+    SP = (Nx)*SP / lmbd
+
+    # Sx = (Nx / 2) * Sx / lmbd
+    Sx = (SP + SP.dag()) / 2
+    Sy = (SP - SP.dag()) / (1j*2)
+    # Sy = (Nx / 2) * Sy / lmbd
+
+    Sz = 0.5 * (SP * SP.dag() - SP.dag() * SP)
+
     S2 = Sx * Sx + Sy * Sy + Sz * Sz
 
-    TP = (Sz - 1j * Sy) / 2
+
 
     return Sx, Sy, Sz, S2, OP
 
