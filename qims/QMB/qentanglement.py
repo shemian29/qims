@@ -11,7 +11,7 @@ def PartBasis(size):
         bsl[l], bsl_ind[l] = qims.basis(int(l), parallel = False, bc = "open")
     return bsl, bsl_ind
 
-def ent_entropy(Hilbert_k_dims, evecs,U, basis_ind, partial_basis, size):
+def ent_entropy(Hilbert_k_dims, Ukevecs, basis, basis_ind, partial_basis, size, check = False):
 
     k_list = np.arange(0, size) / size
 
