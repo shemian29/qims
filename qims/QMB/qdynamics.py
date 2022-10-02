@@ -4,7 +4,16 @@ import qims as qims
 from tqdm.notebook import tqdm
 
 
-def SytSy_alt(Sy, bs, Nx, Ukevecs, evals):
+def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
+    """
+
+    :param SpinOp: spin operator odd under translation symmetry by one lattice site
+    :param bs:
+    :param Nx:
+    :param Ukevecs:
+    :param evals:
+    :return:
+    """
     Corr3 = {}
     Corrrand = {}
     wscar = 1
