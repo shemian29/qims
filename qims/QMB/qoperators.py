@@ -211,6 +211,11 @@ def pxp_operators(basis, basis_ind, size, prms):
 
     Sz = 0.5 * (SP * SP.dag() - SP.dag() * SP)
 
+    Sz_alt = sz_neel(basis, size)
+    lmbd = np.abs(np.min(Sz_alt.diag()))
+    Sz_alt = (Nx/2)*Sz_alt/lmbd
+
+
     S2 = Sx * Sx + Sy * Sy + Sz * Sz
 
 
