@@ -197,7 +197,10 @@ def pxp_operators(basis, basis_ind, size, prms):
 
 
     Sx = (SP + SP.dag())
-    lmbd = np.abs(Sx.groundstate()[0])
+    lmbd = np.abs(Sx.eigenenergies(sparse = True, eigvals=1, sort='low')[0])
+
+
+
 
     SP = (Nx)*SP / lmbd
 
