@@ -221,7 +221,7 @@ def pxp_operators(basis, basis_ind, size, prms):
 
 
 
-    return Sx, Sy, Sz, S2, OP
+    return Sx, Sy, Sz, S2, Sz_alt, S2_alt, OP
 
 
 def sz_neel(basis, size):
