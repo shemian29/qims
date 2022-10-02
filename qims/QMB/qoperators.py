@@ -217,6 +217,7 @@ def pxp_operators(basis, basis_ind, size, prms):
 
 
     S2 = Sx * Sx + Sy * Sy + Sz * Sz
+    S2_alt = Sx * Sx + Sy * Sy + Sz_alt * Sz_alt
 
 
 
