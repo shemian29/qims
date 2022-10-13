@@ -3,6 +3,11 @@
 
 ## Things to consider:
 
+- Add sx and sy terms
+- Simulate multi-level system and extract correct states through overlaps
+- Draw diagram of regime where flat spectrum is obtained
+
+
 -The important thing is to be able to flatten a small region in parameter space determined by the standard deviation in the fluctuations of the parameter of interest
 
 - All dynamical decoupling unitaries are candidates to reduce dephasing
