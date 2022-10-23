@@ -34,7 +34,7 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
 
         aux_k = qims.npqt2qtqt(Ukevecs[k])
         aux_kp = qims.npqt2qtqt(Ukevecs[kit])
-        Skkp = aux_k.dag() * Sy * aux_kp
+        Skkp = aux_k.dag() * SpinOp * aux_kp
         Skkpaux_k = Skkp.dag() * aux_k.dag()
         Skkpaux_kp = Skkp * aux_kp.dag()
 
@@ -64,7 +64,7 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
 
     return Corr3, Corrrand, tlist, wlist
 
-def SytSy(Sy, bs, Nx, Ukevecs, evals):
+def SytSy(Sx,SpinOp, bs, Nx, Ukevecs, evals, check= False):
     Corr3 = {}
     Corrrand = {}
     wscar = 1
@@ -91,7 +91,7 @@ def SytSy(Sy, bs, Nx, Ukevecs, evals):
 
         kwargs["aux_k"] = qims.npqt2qtqt(Ukevecs[k])
         kwargs["aux_kp"] = qims.npqt2qtqt(Ukevecs[kit])
-        kwargs["Skkp"] = kwargs["aux_k"].dag() * Sy * kwargs["aux_kp"]
+        kwargs["Skkp"] = kwargs["aux_k"].dag() * SpinOp * kwargs["aux_kp"]
 
         kwargs["Skkpaux_k"] = kwargs["Skkp"].dag() * kwargs["aux_k"].dag()
         kwargs["Skkpaux_kp"] = kwargs["Skkp"] * kwargs["aux_kp"].dag()
