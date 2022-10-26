@@ -82,30 +82,49 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
     tmp = [qt.rand_ket(len(bs)) for n in range(itmax)]
     sts_rand = qims.npqt2qtqt(tmp)
 
+    #Calculate correlation functions for product states and random states
+    Corr_bare = {}
+    Corr_rand = {}
+    k_list = np.arange(0, Nx) / Nx
     for k in tqdm(k_list[0:int(Nx / 2)]):
-        kit = ((k * Nx + int(Nx / 2)) % Nx) / Nx
 
-        kwargs = {}
+        # Momentum at k + pi
+        kp = ((k * Nx + int(Nx / 2)) % Nx) / Nx
 
-        kwargs["evalsk"] = evals[k]
-        kwargs["evalskit"] = evals[kit]
+        SpinOp_data = {}
+
+        # Eigenvalue from k and k + pi
+        SpinOp_data["ek"] = evals[k]
+        SpinOp_data["ekp"] = evals[kp]
+
+        # Eigenvectors from k and k + pi in qutip matrix form
+        # Eigenvectors represented in bare basis
+        SpinOp_data["Uk"] = qims.npqt2qtqt(Ukevecs[k])
+        SpinOp_data["Ukp"] = qims.npqt2qtqt(Ukevecs[kp])
+
+        # Representation of SpinOp between k and k + pi eigenvectors
+        # SpinOp initially provided in bare basis
+        # This product is in the eigenvector basis
+        SpinOp_data["Ukd_SpinOp_Ukp"] = SpinOp_data["Uk"].dag() * SpinOp * SpinOp_data["Ukp"]
+
+        # Product of SpinOp^{\dagger}_{k,k+pi} with eigenvectors from k
+        # This product is in the (eigenvector kp)-(bare k) basis
+        SpinOp_data["Ukpd_SpinOp_Uk_Ukd"] = SpinOp_data["Ukd_SpinOp_Ukp"].dag() * SpinOp_data["Uk"].dag()
+
+        # Product of SpinOp_{k,k+pi} with eigenvectors from kp
+        # This product is in the (eigenvector k)-(bare kp) basis
+        SpinOp_data["Ukd_SpinOp_Ukp_Ukpd"] = SpinOp_data["Ukd_SpinOp_Ukp"] * SpinOp_data["Ukp"].dag()
+
+        # Calculate correlation function by parallel map on time list
+        Corr_bare[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=True)
 
 
-        kwargs["aux_k"] = qims.npqt2qtqt(Ukevecs[k])
-        kwargs["aux_kp"] = qims.npqt2qtqt(Ukevecs[kit])
-        kwargs["Skkp"] = kwargs["aux_k"].dag() * SpinOp * kwargs["aux_kp"]
+        SpinOp_data["Ukpd_SpinOp_Uk_Ukd_Vrand"] = SpinOp_data["Ukpd_SpinOp_Uk_Ukd"] * sts_rand
+        SpinOp_data["Skkpaux_kp"] = SpinOp_data["Ukd_SpinOp_Ukp_Ukpd"] * sts_rand
+        SpinOp_data["Uk"] = (sts_rand.dag()) * SpinOp_data["Uk"]
+        SpinOp_data["Ukp"] = (sts_rand.dag()) * SpinOp_data["Ukp"]
 
-        kwargs["Skkpaux_k"] = kwargs["Skkp"].dag() * kwargs["aux_k"].dag()
-        kwargs["Skkpaux_kp"] = kwargs["Skkp"] * kwargs["aux_kp"].dag()
-        Corr3[k] = qt.parallel_map(Corr, tlist, task_kwargs=kwargs, progress_bar=True)
-
-
-        rkwargs = {}
-        rkwargs["aux_k"] = (sts_rand.dag()) * kwargs["aux_k"]
-        rkwargs["aux_kp"] = (sts_rand.dag()) * kwargs["aux_kp"]
-        rkwargs["Skkpaux_k"] = kwargs["Skkp"].dag() * kwargs["aux_k"].dag() * (sts_rand)
-        rkwargs["Skkpaux_kp"] = kwargs["Skkp"] * kwargs["aux_kp"].dag() * (sts_rand)
-        Corrrand[k] = qt.parallel_map(Corr, tlist, task_kwargs=kwargs, progress_bar=True)
+        # Corr_rand[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=True)
 
 
         # for t in tqdm(tlist):
