@@ -19,14 +19,14 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
     wscar = 1
     wmax = 5 * wscar
     dw = wscar / 20
-    tmax = (2 * wmax / (2 * wmax + dw)) * (2 * np.pi / (dw))
+    tmax = (2 * wmax / (2 * wmax + dw)) * (2 * np.pi / dw)
     dt = 2 * np.pi / (2 * wmax + dw)
     tlist = np.linspace(0, tmax, int(tmax / dt) + 1)
     k_list = np.arange(0, Nx) / Nx
     wlist = np.linspace(-wmax, wmax, len(tlist))
 
     itmax = 500
-    tmp = [qt.rand_ket(len(bs)) for n in range(itmax)]
+    tmp = [qt.rand_ket(len(bs)) for _ in range(itmax)]
     sts_rand = qims.npqt2qtqt(tmp)
 
     for k in tqdm(k_list[0:int(Nx / 2)]):
@@ -40,8 +40,8 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
 
         rand_aux_k = (sts_rand.dag()) * aux_k
         rand_aux_kp = (sts_rand.dag()) * aux_kp
-        rand_Skkpaux_k = Skkp.dag() * aux_k.dag() * (sts_rand)
-        rand_Skkpaux_kp = Skkp * aux_kp.dag() * (sts_rand)
+        rand_Skkpaux_k = Skkp.dag() * aux_k.dag() * sts_rand
+        rand_Skkpaux_kp = Skkp * aux_kp.dag() * sts_rand
 
         for t in tqdm(tlist):
             phase_k = qt.Qobj(np.diag(np.exp(1j * evals[k] * t)))
@@ -55,10 +55,10 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
             t2 = (phkkp.dag() * Skkpaux_kp).full()
             Corr3[kit, t] = np.sum(t1.T * t2, axis=0)
 
-            t1 = (rand_aux_k).full()
+            t1 = rand_aux_k.full()
             t2 = (phkkp * rand_Skkpaux_k).full()
             Corrrand[k, t] = np.sum(t1.T * t2, axis=0)
-            t1 = (rand_aux_kp).full()
+            t1 = rand_aux_kp.full()
             t2 = (phkkp.dag() * rand_Skkpaux_kp).full()
             Corrrand[kit, t] = np.sum(t1.T * t2, axis=0)
 
