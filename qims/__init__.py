@@ -1,7 +1,7 @@
 from qims.QMB.qbasis import basis, GenerateBasis, idstates,ind2occ,ind2state,occ,state2ind, Towers, npqt2qtqt, error
 from qims.QMB.qoperators import constr, pxp, pxp_hamiltonian, pxp_operators, sp, sz_neel
 from qims.QMB.qentanglement import ent_entropy, PartBasis
-from qims.QMB.qdynamics import SytSy, SytSy_alt
+from qims.QMB.qdynamics import SpinOp_t_SpinOp_0, SytSy_alt
 from qims.QMB.qplot import PlotTowers
 from qims.QMB.qoptimize import error, opt_towers, GenScarData
 
