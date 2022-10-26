@@ -197,7 +197,10 @@ def pxp_operators(basis, basis_ind, size, prms):
 
 
     Sx = (SP + SP.dag())
-    lmbd = np.abs(Sx.groundstate()[0])
+    lmbd = np.abs(Sx.eigenenergies(sparse = True, eigvals=1, sort='low')[0])
+
+
+
 
     SP = (Nx)*SP / lmbd
 
@@ -208,11 +211,17 @@ def pxp_operators(basis, basis_ind, size, prms):
 
     Sz = 0.5 * (SP * SP.dag() - SP.dag() * SP)
 
+    Sz_alt = sz_neel(basis, size)
+    lmbd = np.abs(np.min(Sz_alt.diag()))
+    Sz_alt = (Nx/2)*Sz_alt/lmbd
+
+
     S2 = Sx * Sx + Sy * Sy + Sz * Sz
+    S2_alt = Sx * Sx + Sy * Sy + Sz_alt * Sz_alt
 
 
 
-    return Sx, Sy, Sz, S2, OP
+    return Sx, Sy, Sz, S2, Sz_alt, S2_alt, OP
 
 
 def sz_neel(basis, size):
