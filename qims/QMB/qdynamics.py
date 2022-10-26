@@ -64,9 +64,9 @@ def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
 
     return Corr3, Corrrand, tlist, wlist
 
-def SytSy(Sx,SpinOp, bs, Nx, Ukevecs, evals, check= False):
-    Corr3 = {}
-    Corrrand = {}
+def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
+
+    #Define temporal and frequency-domain grids with respect to scar frequency
     wscar = 1
     wmax = 5 * wscar
     dw = wscar / 20
