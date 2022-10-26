@@ -2,7 +2,7 @@ import qutip as qt
 import numpy as np
 import qims as qims
 from tqdm.notebook import tqdm
-
+from matplotlib import pyplot as plt
 
 def SytSy_alt(SpinOp, bs, Nx, Ukevecs, evals):
     """
@@ -127,27 +127,58 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
         # Corr_rand[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=True)
 
 
-        # for t in tqdm(tlist):
-        #     phase_k = qt.Qobj(np.diag(np.exp(1j * evals[k] * t)))
-        #     phase_kp = qt.Qobj(np.diag(np.exp(-1j * evals[kit] * t)))
-        #
-        #     phkkp = phase_k * Skkp * phase_kp
+    if check and Nx<=14:
+        k_list = np.arange(0, int(Nx / 2)) / Nx
+        scan = []
+        for t in range(len(tlist)):
+            scan.append(np.sum([np.sum(Corr_bare[k][t], axis=0) for k in k_list], axis=0))
+        scan = np.array(scan).T
 
-        #     t1 = aux_k.full()
-        #     t2 = (phkkp * Skkpaux_k).full()
-        #     Corr3[k, t] = np.sum(t1.T * t2, axis=0)
-        #     t1 = aux_kp.full()
-        #     t2 = (phkkp.dag() * Skkpaux_kp).full()
-        #     Corr3[kit, t] = np.sum(t1.T * t2, axis=0)
-        #
-        #     t1 = (rand_aux_k).full()
-        #     t2 = (phkkp * rand_Skkpaux_k).full()
-        #     Corrrand[k, t] = np.sum(t1.T * t2, axis=0)
-        #     t1 = (rand_aux_kp).full()
-        #     t2 = (phkkp.dag() * rand_Skkpaux_kp).full()
-        #     Corrrand[kit, t] = np.sum(t1.T * t2, axis=0)
+        # rand_scan = []
+        # for t in range(len(tlist)):
+        #     rand_scan.append(np.sum([np.sum(Corr_rand[k][t], axis=0) for k in k_list], axis=0))
+        # rand_scan = np.array(rand_scan).T
 
-    return Corr3, Corrrand, tlist, wlist
+        scan_qutip = []
+        rand_scan_qutip = []
+        print("Initiating product state check")
+        for r in tqdm(range(len(bs))):
+            psi0 = qt.basis(len(bs), r)
+            corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
+            scan_qutip.append(corr1)
+
+        # print("Initiating random states check")
+        # for r in tqdm(range(sts_rand.shape[1])):
+        #     psi0 = qt.Qobj(sts_rand[:, r])
+        #     corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
+        #     rand_scan_qutip.append(corr1)
+        #
+        U = qt.propagator(Sx, tlist, c_op_list=[], args={}, options=None, unitary_mode='batch', parallel=True,
+                          progress_bar=True, _safe_mode=True)
+        tmp = [np.real((U[t].dag() * SpinOp * U[t] * SpinOp).diag()) for t in tqdm(range(len(tlist)))]
+        errU = np.abs(np.abs(np.array(scan) - np.array(tmp).T))
+
+        err = np.abs(np.abs(np.array(scan) - np.array(scan_qutip)))
+        errqtqt = np.abs(np.abs(np.array(scan_qutip) - np.array(tmp).T))
+        # err_rand = np.abs(np.abs(np.array(rand_scan) - np.array(rand_scan_qutip)))
+        plt.plot(errqtqt.T[1:]);
+        plt.yscale('log')
+        plt.show()
+
+        plt.plot(errU.T[1:]);
+        plt.yscale('log')
+        plt.show()
+
+        plt.plot(err.T[1:]);
+        plt.yscale('log')
+        plt.show()
+        err_rand = 1
+
+        if np.max(err)<10**(-4) and np.max(err_rand)<10**(-4):
+            print("Passed check, max and mean values:", (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
+        else:
+            print("WARNING: ",  (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
+    return Corr_bare, Corr_rand, tlist, wlist, sts_rand, err
 
 
 def Corr(t, **kwargs):
