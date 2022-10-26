@@ -181,16 +181,24 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
     return Corr_bare, Corr_rand, tlist, wlist, sts_rand, err
 
 
-def Corr(t, **kwargs):
-    phase_k = qt.Qobj(np.diag(np.exp(1j * kwargs["evalsk"] * t)))
-    phase_kp = qt.Qobj(np.diag(np.exp(-1j * kwargs["evalskit"] * t)))
+def Corr_t_map(t, **SpinOp_data):
 
-    phkkp = phase_k * kwargs["Skkp"] * phase_kp
-    t1 = kwargs["aux_k"].full()
-    t2 = (phkkp * kwargs["Skkpaux_k"]).full()
-    Corr3k = np.sum(t1.T * t2, axis=0)
-    t1 = kwargs["aux_kp"].full()
-    t2 = (phkkp.dag() * kwargs["Skkpaux_kp"]).full()
-    Corr3kit = np.sum(t1.T * t2, axis=0)
-    return [Corr3k, Corr3kit]
+    # Phase matrices from k and k + pi
+    phase_k = qt.qdiags(np.exp(1j * SpinOp_data["ek"] * t),0)
+    phase_kp = qt.qdiags(np.exp(-1j * SpinOp_data["ekp"] * t),0)
+    # print(1)
+    # SpinOp_{k,k+pi} sandwiched between phase matrices from k and k + pi
+    # This product is in (eigenvector k) - (eigenvector kp) basis
+    phasek_Ukd_SpinOp_Ukp_phasekp = phase_k * SpinOp_data["Ukd_SpinOp_Ukp"] * phase_kp
+
+    # print(2)
+    # Skkpaux_k is in the (eigenvector k)-(bare kp) basi
+    Uk = SpinOp_data["Uk"].full()
+    phasek_Ukd_SpinOp_Ukp_phasekp_Ukpd_SpinOp_Uk_Ukd = (phasek_Ukd_SpinOp_Ukp_phasekp * SpinOp_data["Ukpd_SpinOp_Uk_Ukd"]).full()
+    # Calculate t1.T * t2, which is in the bare basis
+    Corr_k = np.sum(Uk.T * phasek_Ukd_SpinOp_Ukp_phasekp_Ukpd_SpinOp_Uk_Ukd, axis=0)
+    Ukp = SpinOp_data["Ukp"].full()
+    phasekp_Ukpd_SpinOp_Uk_phasek_Ukd_SpinOp_Ukp_Ukpd = (phasek_Ukd_SpinOp_Ukp_phasekp.dag() * SpinOp_data["Ukd_SpinOp_Ukp_Ukpd"]).full()
+    Corr_kp = np.sum(Ukp.T * phasekp_Ukpd_SpinOp_Uk_phasek_Ukd_SpinOp_Ukp_Ukpd, axis=0)
+    return [Corr_k, Corr_kp]
 
