@@ -68,12 +68,14 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
 
     #Define temporal and frequency-domain grids with respect to scar frequency
     wscar = 1
-    wmax = 5 * wscar
+
     dw = wscar / 20
-    tmax = (2 * wmax / (2 * wmax + dw)) * (2 * np.pi / (dw))
+    wmax = 5 * wscar
+
     dt = 2 * np.pi / (2 * wmax + dw)
+    tmax = (2 * wmax / (2 * wmax + dw)) * (2 * np.pi / (dw))
+
     tlist = np.linspace(0, tmax, int(tmax / dt) + 1)
-    k_list = np.arange(0, Nx) / Nx
     wlist = np.linspace(-wmax, wmax, len(tlist))
 
     itmax = 500
