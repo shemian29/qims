@@ -178,7 +178,7 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
             print("Passed check, max and mean values:", (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
         else:
             print("WARNING: ",  (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
-    return Corr_bare, Corr_rand, tlist, wlist, sts_rand, err
+    return Corr_bare, Corr_rand, tlist, wlist, sts_rand
 
 
 def Corr_t_map(t, **SpinOp_data):
