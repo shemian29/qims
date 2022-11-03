@@ -2,4 +2,5 @@
 *.txt
 *.dat
 *.pdf
+*.ipynb
 .nb
