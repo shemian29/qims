@@ -15,4 +15,3 @@ from qims.QMB.qsymmetry import GenerateMomentumBasis, Hk, TransInd, MomentumEige
 
 from qims.temp.JJCircuits import JJCircuit
 from qims.QCircuits.Systems import qubit_hamiltonian
-
