@@ -6,8 +6,9 @@ from qims.QMB.qdynamics import SpinOp_t_SpinOp_0, SytSy_alt
 from qims.QMB.qplot import PlotTowers
 from qims.QMB.qoptimize import error, opt_towers, GenScarData
 
-from qims.QFloquet.DecoherenceRates import filter_coefficients, dephasing_rate,Sf
-from qims.QFloquet.Spectrum import FloquetSpectrum,flat_dev
+from qims.QFloquet.FloquetQubit import FloquetQubit
+from qims.QFloquet.DecoherenceRates import filter_coefficients, dephasing_rate, Sf
+from qims.QFloquet.Spectrum import FloquetSpectrum, flat_dev
 from qims.QFloquet.Drives import drive_sx, drive_sy, drive_sz, extract_oploc, dd_protocols
 from qims.temp.JJCircuits import JJCircuit
 from qims.QMB.qsymmetry import GenerateMomentumBasis, Hk, TransInd, MomentumEigensystem
