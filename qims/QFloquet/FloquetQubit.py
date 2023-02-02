@@ -223,3 +223,33 @@ class FloquetQubit:
     def gcoeff(self, m, tau_ave):
         return (1 / self.T_drive) * np.sum(np.exp(1j * m * 2 * np.pi * self.tlist / self.T_drive) * tau_ave) * np.mean(
             np.diff(self.tlist))
+
+
+#     def DecoherenceRates(self, operator):
+#
+#         self.Delta, self.X, self.Gamma, self.Amat = qt.floquet_master_equation_rates(
+#             self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args = None, noise_spectrum,
+#             temp, kmax, self.fmodes_table
+#         )
+#
+#
+# kmax = 1
+#
+#         Delta, X, Gamma, Amat = floquet_master_equation_rates(
+#             fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
+#             temp, kmax, fq.fmodes_table
+#         )
+#
+#         eps = 1
+#
+#         while eps > 10 ** (-5):
+#             kmax += 1
+#
+#             Delta1, X1, Gamma1, Amat1 = Delta, X, Gamma, Amat
+#
+#             Delta, X, Gamma, Amat = floquet_master_equation_rates(
+#                 fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
+#                 temp, kmax, fq.fmodes_table
+#             )
+#
+#             eps = np.sum(np.abs(Amat - Amat1))
