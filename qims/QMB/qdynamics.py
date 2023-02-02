@@ -117,68 +117,76 @@ def SpinOp_t_SpinOp_0(Sx, SpinOp, bs, Nx, Ukevecs, evals, check = False):
 
         # Calculate correlation function by parallel map on time list
         Corr_bare[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=True)
-
+        print("Done with bare states")
 
         SpinOp_data["Ukpd_SpinOp_Uk_Ukd_Vrand"] = SpinOp_data["Ukpd_SpinOp_Uk_Ukd"] * sts_rand
         SpinOp_data["Skkpaux_kp"] = SpinOp_data["Ukd_SpinOp_Ukp_Ukpd"] * sts_rand
         SpinOp_data["Uk"] = (sts_rand.dag()) * SpinOp_data["Uk"]
         SpinOp_data["Ukp"] = (sts_rand.dag()) * SpinOp_data["Ukp"]
-
-        # Corr_rand[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=True)
-
-
-    if check and Nx<=14:
-        k_list = np.arange(0, int(Nx / 2)) / Nx
-        scan = []
-        for t in range(len(tlist)):
-            scan.append(np.sum([np.sum(Corr_bare[k][t], axis=0) for k in k_list], axis=0))
-        scan = np.array(scan).T
-
-        # rand_scan = []
-        # for t in range(len(tlist)):
-        #     rand_scan.append(np.sum([np.sum(Corr_rand[k][t], axis=0) for k in k_list], axis=0))
-        # rand_scan = np.array(rand_scan).T
-
-        scan_qutip = []
-        rand_scan_qutip = []
-        print("Initiating product state check")
-        for r in tqdm(range(len(bs))):
-            psi0 = qt.basis(len(bs), r)
-            corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
-            scan_qutip.append(corr1)
-
-        # print("Initiating random states check")
-        # for r in tqdm(range(sts_rand.shape[1])):
-        #     psi0 = qt.Qobj(sts_rand[:, r])
-        #     corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
-        #     rand_scan_qutip.append(corr1)
-        #
-        U = qt.propagator(Sx, tlist, c_op_list=[], args={}, options=None, unitary_mode='batch', parallel=True,
-                          progress_bar=True, _safe_mode=True)
-        tmp = [np.real((U[t].dag() * SpinOp * U[t] * SpinOp).diag()) for t in tqdm(range(len(tlist)))]
-        errU = np.abs(np.abs(np.array(scan) - np.array(tmp).T))
-
-        err = np.abs(np.abs(np.array(scan) - np.array(scan_qutip)))
-        errqtqt = np.abs(np.abs(np.array(scan_qutip) - np.array(tmp).T))
-        # err_rand = np.abs(np.abs(np.array(rand_scan) - np.array(rand_scan_qutip)))
-        plt.plot(errqtqt.T[1:]);
-        plt.yscale('log')
-        plt.show()
-
-        plt.plot(errU.T[1:]);
-        plt.yscale('log')
-        plt.show()
-
-        plt.plot(err.T[1:]);
-        plt.yscale('log')
-        plt.show()
-        err_rand = 1
-
-        if np.max(err)<10**(-4) and np.max(err_rand)<10**(-4):
-            print("Passed check, max and mean values:", (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
-        else:
-            print("WARNING: ",  (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
-    return Corr_bare, Corr_rand, tlist, wlist, sts_rand, err
+        print("Starting with random states")
+        return Corr_t_map(tlist[0],**SpinOp_data)
+    #     Corr_rand[k] = qt.parallel_map(Corr_t_map, tlist, task_kwargs=SpinOp_data, progress_bar=False)
+    #
+    #
+    # if check and Nx<=14:
+    #
+    #     # Array of possible momentum indices
+    #     k_list = np.arange(0, int(Nx / 2)) / Nx
+    #
+    #     #Calculate correlation function summed over all momenta for bare states
+    #     scan = []
+    #     for t in range(len(tlist)):
+    #         scan.append(np.sum([np.sum(Corr_bare[k][t], axis=0) for k in k_list], axis=0))
+    #     scan = np.array(scan).T
+    #
+    #     #Calculate correlation function summed over all momenta for random states
+    #     rand_scan = []
+    #     for t in range(len(tlist)):
+    #         rand_scan.append(np.sum([np.sum(Corr_rand[k][t], axis=0) for k in k_list], axis=0))
+    #     rand_scan = np.array(rand_scan).T
+    #
+    #     scan_qutip = []
+    #     rand_scan_qutip = []
+    #     print("Initiating product state check")
+    #     for r in tqdm(range(len(bs))):
+    #         psi0 = qt.basis(len(bs), r)
+    #         corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
+    #         scan_qutip.append(corr1)
+    #
+    #     print("Initiating random states check")
+    #     for r in tqdm(range(sts_rand.shape[1])):
+    #         psi0 = qt.Qobj(sts_rand[:, r])
+    #         corr1 = qt.correlation_2op_1t(Sx, psi0, tlist, [], SpinOp, SpinOp)
+    #         rand_scan_qutip.append(corr1)
+    #
+    #     U = qt.propagator(Sx, tlist, c_op_list=[], args={}, options=None, unitary_mode='batch', parallel=True,
+    #                       progress_bar=True, _safe_mode=True)
+    #     tmp = [np.real((U[t].dag() * SpinOp * U[t] * SpinOp).diag()) for t in tqdm(range(len(tlist)))]
+    #     errU = np.abs(np.abs(np.array(scan) - np.array(tmp).T))
+    #
+    #     err = np.abs(np.abs(np.array(scan) - np.array(scan_qutip)))
+    #     errqtqt = np.abs(np.abs(np.array(scan_qutip) - np.array(tmp).T))
+    #     # err_rand = np.abs(np.abs(np.array(rand_scan) - np.array(rand_scan_qutip)))
+    #
+    #
+    #     plt.plot(errqtqt.T[1:]);
+    #     plt.yscale('log')
+    #     plt.show()
+    #
+    #     plt.plot(errU.T[1:]);
+    #     plt.yscale('log')
+    #     plt.show()
+    #
+    #     plt.plot(err.T[1:]);
+    #     plt.yscale('log')
+    #     plt.show()
+    #     err_rand = 1
+    #
+    #     if np.max(err)<10**(-4) and np.max(err_rand)<10**(-4):
+    #         print("Passed check, max and mean values:", (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
+    #     else:
+    #         print("WARNING: ",  (np.max(err), np.mean(err)),(np.max(err_rand), np.mean(err_rand)))
+    # return Corr_bare, Corr_rand, tlist, wlist, sts_rand
 
 
 def Corr_t_map(t, **SpinOp_data):
@@ -200,5 +208,6 @@ def Corr_t_map(t, **SpinOp_data):
     Ukp = SpinOp_data["Ukp"].full()
     phasekp_Ukpd_SpinOp_Uk_phasek_Ukd_SpinOp_Ukp_Ukpd = (phasek_Ukd_SpinOp_Ukp_phasekp.dag() * SpinOp_data["Ukd_SpinOp_Ukp_Ukpd"]).full()
     Corr_kp = np.sum(Ukp.T * phasekp_Ukpd_SpinOp_Uk_phasek_Ukd_SpinOp_Ukp_Ukpd, axis=0)
+    print(3)
     return [Corr_k, Corr_kp]
 
