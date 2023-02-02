@@ -2,6 +2,7 @@ import scqubits as scq
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
+import qims
 
 from tqdm.notebook import tqdm
 
