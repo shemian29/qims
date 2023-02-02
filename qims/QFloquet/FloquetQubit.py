@@ -27,19 +27,28 @@ class FloquetQubit:
 
     def setup_prompt(self, system, drive):
 
-        if system == "qubit":
+        if system == "qubit" and drive == "pulse":
             print("- Example system dictionary:\n")
             print("system_params = {'b1':1, 'b2':1, 'b3':1} # the b_i defines coefficients of Pauli matrices \n")
 
-        if drive == "pulse":
             print("- Possible drive operators: sx, sy, sz. Example of drive dictionary:\n")
             print(
                 "drive_params = {'pattern' : [1.0,'sx',2.0,'sy',1.0],'angles' : np.array([np.pi/2, np.pi/2]),'widths': np.array([0.1,0.1])} ")
             print("")
 
+
+        elif (system == "transmon" or "Transmon") and drive == "pulse":
+            print("- Example system dictionary:\n")
+            print("system_params = {'EJ':1.0, 'EC':2.0, 'ng':0.6, 'ng_reference' : 0.5, 'ncut':30} \n")
+
+            print("- Possible drive operators: charge. Example of drive dictionary:\n")
+            print(
+                "drive_params = {'pattern' : [1.0,'charge',2.0,'charge',1.0],'angles' : np.array([np.pi/2, np.pi/2]),'widths': np.array([0.1,0.1])} ")
+            print("")
+
     def SetDrivenSystem(self):
 
-        if self.drive == "pulse":
+        if (self.drive == "pulse") and (self.system == "qubit"):
             all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
             self.T_drive = np.sum(self.drive_params["widths"]) + np.sum(all_spacings)
 
@@ -50,6 +59,9 @@ class FloquetQubit:
         if self.system == "qubit":
             self.operators = [["sx", qt.sigmax()], ["sy", qt.sigmay()], ["sz", qt.sigmaz()]]
 
+            self.phaseshift = np.pi/2
+            self.omega_q = 0
+
             H_static = self.system_params["b1"] * qt.sigmax() \
                        + self.system_params["b2"] * qt.sigmay() \
                        + self.system_params["b3"] * qt.sigmaz()
@@ -58,6 +70,42 @@ class FloquetQubit:
             H_dynamic.append([self.operators[0][1], lambda t, args: self.drive_profile(t, self.operators[0][0])])
             H_dynamic.append([self.operators[1][1], lambda t, args: self.drive_profile(t, self.operators[1][0])])
             H_dynamic.append([self.operators[2][1], lambda t, args: self.drive_profile(t, self.operators[2][0])])
+
+            self.H_static = H_static
+            self.H_dynamic = H_dynamic
+
+        elif (self.drive == "pulse") and (self.system == "transmon" or "Transmon"):
+
+            all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
+            self.T_drive = np.sum(self.drive_params["widths"]) + np.sum(all_spacings)
+
+            self.tlist = np.linspace(0, self.T_drive, self.Nt_steps)
+
+            self.freq = np.fft.fftfreq(self.tlist.shape[-1])
+
+            tmon_reference = scq.Transmon(EJ=self.system_params["EJ"],
+                                EC=self.system_params["EC"],
+                                ng=self.system_params["ng_reference"],
+                                ncut=self.system_params["ncut"])
+
+            H_full_reference = qt.Qobj(tmon_reference.hamiltonian())
+            evals_reference, evecs_reference = H_full_reference.eigenstates()
+            qubit_reference = qims.npqt2qtqt(evecs_reference[0:2])
+
+            self.omega_q = evals_reference[1]-evals_reference[0]
+
+            tmon = scq.Transmon(EJ=self.system_params["EJ"],
+                                EC=self.system_params["EC"],
+                                ng=self.system_params["ng"],
+                                ncut=self.system_params["ncut"])
+
+            self.operators = [["charge", qubit_reference.dag()*qt.Qobj(tmon.n_operator())*qubit_reference]]
+            # self.operators = [["charge", qt.sigmax()]]
+
+            H_static = qubit_reference.dag()*qt.Qobj(qt.Qobj(tmon.hamiltonian()))*qubit_reference
+
+            H_dynamic = list([H_static])
+            H_dynamic.append([self.operators[0][1], lambda t, args: self.drive_profile(t, self.operators[0][0])])
 
             self.H_static = H_static
             self.H_dynamic = H_dynamic
@@ -82,13 +130,13 @@ class FloquetQubit:
             for it, b in enumerate(bins):
                 aux_driveassign[aux_operators[it]].append(b)
 
-            all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
+            # all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
 
             aux_locs = ((np.where(np.array(self.drive_params["pattern"]) == operator)[-1] - 1) / 2).astype(int)
 
             for it, interval in enumerate(aux_driveassign[operator]):
                 if interval[0] < t % self.T_drive < interval[1]:
-                    return (self.drive_params["angles"][aux_locs[it]] / self.drive_params["widths"][aux_locs[it]])
+                    return (self.drive_params["angles"][aux_locs[it]] / self.drive_params["widths"][aux_locs[it]])*np.sin(self.omega_q*t+self.phaseshift)
         return 0
 
     def PlotDrive(self):
