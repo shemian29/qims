@@ -56,7 +56,6 @@ class FloquetQubit:
 
             self.freq = np.fft.fftfreq(self.tlist.shape[-1])
 
-        if self.system == "qubit":
             self.operators = [["sx", qt.sigmax()], ["sy", qt.sigmay()], ["sz", qt.sigmaz()]]
 
             self.phaseshift = np.pi/2
@@ -274,31 +273,29 @@ class FloquetQubit:
             np.diff(self.tlist))
 
 
-#     def DecoherenceRates(self, operator):
-#
-#         self.Delta, self.X, self.Gamma, self.Amat = qt.floquet_master_equation_rates(
-#             self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args = None, noise_spectrum,
-#             temp, kmax, self.fmodes_table
-#         )
-#
-#
-# kmax = 1
-#
-#         Delta, X, Gamma, Amat = floquet_master_equation_rates(
-#             fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
-#             temp, kmax, fq.fmodes_table
-#         )
-#
-#         eps = 1
-#
-#         while eps > 10 ** (-5):
-#             kmax += 1
-#
-#             Delta1, X1, Gamma1, Amat1 = Delta, X, Gamma, Amat
-#
-#             Delta, X, Gamma, Amat = floquet_master_equation_rates(
-#                 fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
-#                 temp, kmax, fq.fmodes_table
-#             )
-#
-#             eps = np.sum(np.abs(Amat - Amat1))
+    def DecoherenceRates(self, operator, noise_spectrum):
+
+        kmax = 1
+        temp = 0.0
+        args = {}
+        Amat = qt.floquet_master_equation_rates(
+            self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args, noise_spectrum,
+            temp, kmax, self.fmodes_table
+        )[3]
+
+        eps = 1
+
+        while eps > 10 ** (-6):
+            kmax += 1
+            # print(kmax)
+            Amat1 = Amat
+
+            Amat = qt.floquet_master_equation_rates(
+                self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args, noise_spectrum,
+                temp, kmax, self.fmodes_table
+            )[3]
+
+            eps = np.sum(np.abs(Amat - Amat1))
+            # print(eps)
+        self.Arate = Amat
+        self.kmax = kmax
