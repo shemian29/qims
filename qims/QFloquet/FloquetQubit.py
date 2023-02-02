@@ -18,7 +18,7 @@ class FloquetQubit:
         self.system_params = None
         self.drive_params = None
 
-        self.optionsODE = qt.Options(nsteps=100000,
+        self.optionsODE = qt.Options(nsteps=10000000,
                                      store_states=True,
                                      rtol=1e-12,
                                      atol=1e-12,
