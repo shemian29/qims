@@ -170,6 +170,8 @@ class FloquetQubit:
         f_coeff = qt.floquet_state_decomposition(self.f_modes, self.f_energies, Psi0)
         psi_t = qt.floquet_wavefunction(f_modes_t, self.f_energies, f_coeff, t)
 
+        # output = qt.fmmesolve(self.H_dynamic, Psi0, self.tlist, [qutip.sigmaz()], [], [noise_spectrum], T, args)
+
         return psi_t
 
     def BlochVector_StaticBasis(self, Psi0, monitor=True):
@@ -287,7 +289,7 @@ class FloquetQubit:
 
         while eps > 10 ** (-6):
             kmax += 1
-            # print(kmax)
+
             Amat1 = Amat
 
             Amat = qt.floquet_master_equation_rates(
@@ -296,6 +298,10 @@ class FloquetQubit:
             )[3]
 
             eps = np.sum(np.abs(Amat - Amat1))
-            # print(eps)
-        self.Arate = Amat
-        self.kmax = kmax
+
+        self.depolarization_rate = Amat[0,1] + Amat[1,0]
+        self.dephasing_rate = np.sum(Amat)/2
+        self._kmax_ = kmax
+
+    def PlotDynamics(self):
+
