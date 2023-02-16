@@ -2,6 +2,7 @@ import scqubits as scq
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
+import qims
 
 from tqdm.notebook import tqdm
 
@@ -17,7 +18,7 @@ class FloquetQubit:
         self.system_params = None
         self.drive_params = None
 
-        self.optionsODE = qt.Options(nsteps=100000,
+        self.optionsODE = qt.Options(nsteps=10000000,
                                      store_states=True,
                                      rtol=1e-12,
                                      atol=1e-12,
@@ -26,19 +27,28 @@ class FloquetQubit:
 
     def setup_prompt(self, system, drive):
 
-        if system == "qubit":
+        if system == "qubit" and drive == "pulse":
             print("- Example system dictionary:\n")
             print("system_params = {'b1':1, 'b2':1, 'b3':1} # the b_i defines coefficients of Pauli matrices \n")
 
-        if drive == "pulse":
             print("- Possible drive operators: sx, sy, sz. Example of drive dictionary:\n")
             print(
                 "drive_params = {'pattern' : [1.0,'sx',2.0,'sy',1.0],'angles' : np.array([np.pi/2, np.pi/2]),'widths': np.array([0.1,0.1])} ")
             print("")
 
+
+        elif (system == "transmon" or "Transmon") and drive == "pulse":
+            print("- Example system dictionary:\n")
+            print("system_params = {'EJ':1.0, 'EC':2.0, 'ng':0.6, 'ng_reference' : 0.5, 'ncut':30} \n")
+
+            print("- Possible drive operators: charge. Example of drive dictionary:\n")
+            print(
+                "drive_params = {'pattern' : [1.0,'charge',2.0,'charge',1.0],'angles' : np.array([np.pi/2, np.pi/2]),'widths': np.array([0.1,0.1])} ")
+            print("")
+
     def SetDrivenSystem(self):
 
-        if self.drive == "pulse":
+        if (self.drive == "pulse") and (self.system == "qubit"):
             all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
             self.T_drive = np.sum(self.drive_params["widths"]) + np.sum(all_spacings)
 
@@ -46,8 +56,10 @@ class FloquetQubit:
 
             self.freq = np.fft.fftfreq(self.tlist.shape[-1])
 
-        if self.system == "qubit":
             self.operators = [["sx", qt.sigmax()], ["sy", qt.sigmay()], ["sz", qt.sigmaz()]]
+
+            self.phaseshift = np.pi/2
+            self.omega_q = 0
 
             H_static = self.system_params["b1"] * qt.sigmax() \
                        + self.system_params["b2"] * qt.sigmay() \
@@ -57,6 +69,42 @@ class FloquetQubit:
             H_dynamic.append([self.operators[0][1], lambda t, args: self.drive_profile(t, self.operators[0][0])])
             H_dynamic.append([self.operators[1][1], lambda t, args: self.drive_profile(t, self.operators[1][0])])
             H_dynamic.append([self.operators[2][1], lambda t, args: self.drive_profile(t, self.operators[2][0])])
+
+            self.H_static = H_static
+            self.H_dynamic = H_dynamic
+
+        elif (self.drive == "pulse") and (self.system == "transmon" or "Transmon"):
+
+            all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
+            self.T_drive = np.sum(self.drive_params["widths"]) + np.sum(all_spacings)
+
+            self.tlist = np.linspace(0, self.T_drive, self.Nt_steps)
+
+            self.freq = np.fft.fftfreq(self.tlist.shape[-1])
+
+            tmon_reference = scq.Transmon(EJ=self.system_params["EJ"],
+                                EC=self.system_params["EC"],
+                                ng=self.system_params["ng_reference"],
+                                ncut=self.system_params["ncut"])
+
+            H_full_reference = qt.Qobj(tmon_reference.hamiltonian())
+            evals_reference, evecs_reference = H_full_reference.eigenstates()
+            qubit_reference = qims.npqt2qtqt(evecs_reference[0:2])
+
+            self.omega_q = evals_reference[1]-evals_reference[0]
+
+            tmon = scq.Transmon(EJ=self.system_params["EJ"],
+                                EC=self.system_params["EC"],
+                                ng=self.system_params["ng"],
+                                ncut=self.system_params["ncut"])
+
+            self.operators = [["charge", qubit_reference.dag()*qt.Qobj(tmon.n_operator())*qubit_reference]]
+            # self.operators = [["charge", qt.sigmax()]]
+
+            H_static = qubit_reference.dag()*qt.Qobj(qt.Qobj(tmon.hamiltonian()))*qubit_reference
+
+            H_dynamic = list([H_static])
+            H_dynamic.append([self.operators[0][1], lambda t, args: self.drive_profile(t, self.operators[0][0])])
 
             self.H_static = H_static
             self.H_dynamic = H_dynamic
@@ -81,13 +129,13 @@ class FloquetQubit:
             for it, b in enumerate(bins):
                 aux_driveassign[aux_operators[it]].append(b)
 
-            all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
+            # all_spacings = [r for r in self.drive_params["pattern"] if isinstance(r, float)]
 
             aux_locs = ((np.where(np.array(self.drive_params["pattern"]) == operator)[-1] - 1) / 2).astype(int)
 
             for it, interval in enumerate(aux_driveassign[operator]):
                 if interval[0] < t % self.T_drive < interval[1]:
-                    return (self.drive_params["angles"][aux_locs[it]] / self.drive_params["widths"][aux_locs[it]])
+                    return (self.drive_params["angles"][aux_locs[it]] / self.drive_params["widths"][aux_locs[it]])*np.sin(self.omega_q*t+self.phaseshift)
         return 0
 
     def PlotDrive(self):
@@ -121,6 +169,8 @@ class FloquetQubit:
         f_modes_t = qt.floquet_modes_t_lookup(self.fmodes_table, t, self.T_drive)
         f_coeff = qt.floquet_state_decomposition(self.f_modes, self.f_energies, Psi0)
         psi_t = qt.floquet_wavefunction(f_modes_t, self.f_energies, f_coeff, t)
+
+        # output = qt.fmmesolve(self.H_dynamic, Psi0, self.tlist, [qutip.sigmaz()], [], [noise_spectrum], T, args)
 
         return psi_t
 
@@ -225,31 +275,33 @@ class FloquetQubit:
             np.diff(self.tlist))
 
 
-#     def DecoherenceRates(self, operator):
-#
-#         self.Delta, self.X, self.Gamma, self.Amat = qt.floquet_master_equation_rates(
-#             self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args = None, noise_spectrum,
-#             temp, kmax, self.fmodes_table
-#         )
-#
-#
-# kmax = 1
-#
-#         Delta, X, Gamma, Amat = floquet_master_equation_rates(
-#             fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
-#             temp, kmax, fq.fmodes_table
-#         )
-#
-#         eps = 1
-#
-#         while eps > 10 ** (-5):
-#             kmax += 1
-#
-#             Delta1, X1, Gamma1, Amat1 = Delta, X, Gamma, Amat
-#
-#             Delta, X, Gamma, Amat = floquet_master_equation_rates(
-#                 fq.f_modes, fq.f_energies, c_ops[0], fq.H_dynamic, fq.T_drive, args, noise_spectrum,
-#                 temp, kmax, fq.fmodes_table
-#             )
-#
-#             eps = np.sum(np.abs(Amat - Amat1))
+    def DecoherenceRates(self, operator, noise_spectrum):
+
+        kmax = 1
+        temp = 0.0
+        args = {}
+        Amat = qt.floquet_master_equation_rates(
+            self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args, noise_spectrum,
+            temp, kmax, self.fmodes_table
+        )[3]
+
+        eps = 1
+
+        while eps > 10 ** (-6):
+            kmax += 1
+
+            Amat1 = Amat
+
+            Amat = qt.floquet_master_equation_rates(
+                self.f_modes, self.f_energies, operator, self.H_dynamic, self.T_drive, args, noise_spectrum,
+                temp, kmax, self.fmodes_table
+            )[3]
+
+            eps = np.sum(np.abs(Amat - Amat1))
+
+        self.depolarization_rate = Amat[0,1] + Amat[1,0]
+        self.dephasing_rate = np.sum(Amat)/2
+        self._kmax_ = kmax
+
+    # def PlotDynamics(self):
+
