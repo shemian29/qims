@@ -1,6 +1,7 @@
-/Project_QMBS/.ipynb_checkpoints/
+/QMBS/.ipynb_checkpoints/
 *.txt
 *.dat
 *.pdf
 *.ipynb
 .nb
+*.md
