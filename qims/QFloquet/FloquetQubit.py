@@ -303,5 +303,5 @@ class FloquetQubit:
         self.dephasing_rate = np.sum(Amat)/2
         self._kmax_ = kmax
 
-    def PlotDynamics(self):
+    # def PlotDynamics(self):
 
