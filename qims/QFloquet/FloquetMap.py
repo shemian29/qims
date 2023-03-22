@@ -128,6 +128,15 @@ class DirectFloquetMap:
         return np.dot((np.abs(g_x_c + 1j * g_y_c) ** 2), self.spectral_density(self.m_list * self.wd - ϵ01)) \
                + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(self.m_list * self.wd))
 
+    def rate_grad(self, g_full):
+        g_x_c = self.g_s(g_full, 'x', 'c')
+        g_y_c = self.g_s(g_full, 'y', 'c')
+        g_z_c = self.g_s(g_full, 'z', 'c')
+        ϵ01 = g_full[-1]
+
+        return np.dot((np.abs(g_x_c + 1j * g_y_c) ** 2), self.spectral_density(self.m_list * self.wd - ϵ01)) \
+               + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(self.m_list * self.wd))
+
 
     def φ(self,t):
         return self.wd * t
