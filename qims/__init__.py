@@ -7,6 +7,7 @@ from qims.QMB.qplot import PlotTowers
 from qims.QMB.qoptimize import error, opt_towers, GenScarData
 
 from qims.QFloquet.FloquetQubit import FloquetQubit
+from qims.QFloquet.FloquetMap import DirectFloquetMap
 from qims.QFloquet.DecoherenceRates import filter_coefficients, dephasing_rate, Sf
 from qims.QFloquet.Spectrum import FloquetSpectrum, flat_dev
 from qims.QFloquet.Drives import drive_sx, drive_sy, drive_sz, extract_oploc, dd_protocols
