@@ -18,7 +18,7 @@ class DirectFloquetMap:
                                      atol=1e-12,
                                      max_step=0.001)
         self.Nt_steps = 200
-
+        self.dt = 0.0001
 
         self.m_list = np.arange(-mcut, mcut + 1)
         self.wd = wd
@@ -26,7 +26,7 @@ class DirectFloquetMap:
         self.Ez = Ez
         self.tlist = np.linspace(0, self.T, len(self.m_list))
 
-    def Optimal_gs(self):
+    def Optimal_gs(self, maxiter = 100):
 
         eq_cons = {'type': 'eq',
                    'fun': lambda g_full: [np.linalg.norm(
@@ -37,7 +37,7 @@ class DirectFloquetMap:
 
         eq_cons2 = {'type': 'eq',
                     'fun': lambda g_full: [np.abs((1 / self.T) * np.diff(self.tlist)[0] * np.sum([(g_full[-1] - np.real(
-                        self.dδexp2jβdt(g_full, t, 0.000001) / (2 * 1j * self.δexp2jβ(g_full, t)))) * self.g_t(g_full,
+                        self.dδexp2jβdt(g_full, t) / (2 * 1j * self.δexp2jβ(g_full, t)))) * self.g_t(g_full,
                                                                                                                'z', t)
                                                                                                   for t in
                                                                                                   self.tlist]) - self.Ez)]}
@@ -48,7 +48,8 @@ class DirectFloquetMap:
         g0[-1] = self.Ez
         self.res = minimize(self.rate, g0, method='SLSQP',
                        constraints=[eq_cons, eq_cons2],
-                       options={'disp': True, "maxiter": 20})
+                       options={'disp': True, "maxiter": maxiter})
+        self.ϵ01 = self.res.x[-1]
         print('Constraint evaluations: ', eq_cons['fun'](self.res.x), eq_cons2['fun'](self.res.x))
 
 
@@ -57,13 +58,13 @@ class DirectFloquetMap:
         f1 = ((self.g_t(gfull, 'x', t) + 1j * self.g_t(gfull, 'y', t)) ** 2) / (1 - self.g_t(gfull, 'z', t) ** 2)
         return f1
 
-    def dδexp2jβdt(self, gfull, t, dt):
+    def dδexp2jβdt(self, gfull, t):
 
         f1 = ((self.g_t(gfull, 'x', t) + 1j * self.g_t(gfull, 'y', t)) ** 2) / (1 - self.g_t(gfull, 'z', t) ** 2)
-        f2 = ((self.g_t(gfull, 'x', t + dt) + 1j * self.g_t(gfull, 'y', t + dt)) ** 2) / (
-                    1 - self.g_t(gfull, 'z', t + dt) ** 2)
+        f2 = ((self.g_t(gfull, 'x', t + self.dt) + 1j * self.g_t(gfull, 'y', t + self.dt)) ** 2) / (
+                    1 - self.g_t(gfull, 'z', t + self.dt) ** 2)
 
-        return (f2 - f1) / dt
+        return (f2 - f1) / self.dt
 
     def g_mat(self, g_coeffs):
 
@@ -132,10 +133,10 @@ class DirectFloquetMap:
         return self.wd * t
 
 
-    def dφdt(self,t, dt):
+    def dφdt(self,t):
         f1 = self.φ(t)
-        f2 = self.φ(t + dt)
-        return (f2 - f1) / dt
+        f2 = self.φ(t + self.dt)
+        return (f2 - f1) / self.dt
 
 
     def cosφ(self,t):
@@ -146,8 +147,8 @@ class DirectFloquetMap:
         return np.sin(self.φ(t))
 
 
-    def A1(self,g_full, t, dt):
-        return (g_full[-1] - np.real(self.dδexp2jβdt(g_full, t, dt) / (2 * 1j * self.δexp2jβ(g_full, t))))
+    def A1(self,g_full, t):
+        return (g_full[-1] - np.real(self.dδexp2jβdt(g_full, t) / (2 * 1j * self.δexp2jβ(g_full, t))))
 
 
     def cosθ(self,g_full, t):
@@ -158,27 +159,27 @@ class DirectFloquetMap:
         return np.sqrt(1 - self.cosθ(g_full, t) ** 2)
 
 
-    def dgzzdt(self,g_full, t, dt):
+    def dgzzdt(self,g_full, t):
         f1 = self.g_t(g_full, 'z', t)
-        f2 = self.g_t(g_full, 'z', t + dt)
+        f2 = self.g_t(g_full, 'z', t + self.dt)
 
-        return (f2 - f1) / dt
-
-
-    def dθdt(self,t, dt):
-        return -self.dgzzdt(self.res.x, t, dt) / self.sinθ(self.res.x, t)
+        return (f2 - f1) / self.dt
 
 
-    def Vx(self, t, dt):
-        return 0.5 * (self.A1(self.res.x, t, dt) * self.cosφ(t) * self.sinθ(self.res.x, t) + self.dθdt(self.res.x, t, dt) * self.sinφ(t))
+    def dθdt(self, g_full,t):
+        return -self.dgzzdt(g_full, t) / self.sinθ(g_full, t)
 
 
-    def Vy(self, t, dt):
-        return 0.5 * (self.A1(self.res.x, t, dt) * self.sinφ(t) * self.sinθ(self.res.x, t) + self.dθdt(self.res.x, t, dt) * self.cosφ(t))
+    def Vx(self, t):
+        return 0.5 * (self.A1(self.res.x, t) * self.cosφ(t) * self.sinθ(self.res.x, t) + self.dθdt(self.res.x,t) * self.sinφ(t))
 
 
-    def Vz(self, t, dt):
-        return 0.5 * (self.A1(self.res.x, t, dt) * self.cosθ(self.res.x, t) - self.dφdt(t, dt) - self.Ez)
+    def Vy(self, t):
+        return 0.5 * (self.A1(self.res.x, t) * self.sinφ(t) * self.sinθ(self.res.x, t) + self.dθdt(self.res.x, t) * self.cosφ(t))
+
+
+    def Vz(self, t):
+        return 0.5 * (self.A1(self.res.x, t) * self.cosθ(self.res.x, t) - self.dφdt(t) - self.Ez)
 
 
     def Plot_gs(self):
