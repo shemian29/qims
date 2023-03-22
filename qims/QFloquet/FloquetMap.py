@@ -4,6 +4,9 @@ from scipy.optimize import minimize
 import numpy as np
 from matplotlib.pyplot import figure
 import matplotlib.pyplot as plt
+from matplotlib import animation
+from mpl_toolkits.mplot3d import Axes3D
+
 
 class DirectFloquetMap:
 
@@ -196,3 +199,103 @@ class DirectFloquetMap:
         plt.xticks(fontsize=15)
         plt.yticks(fontsize=15)
         plt.grid()
+
+    def Hamiltonian(self):
+
+        sx = qt.sigmax()
+        sy = qt.sigmay()
+        sz = qt.sigmaz()
+
+        H_static = 0.5 * self.Ez * sz
+
+        H_dynamic = list([H_static])
+
+        H_dynamic.append([sx,
+                          lambda t, args: self.Vx(t)])
+
+        H_dynamic.append([sy,
+                          lambda t, args: self.Vy(t)])
+
+        H_dynamic.append([sz / 2,
+                          lambda t, args: self.Vz(t)])
+
+        return H_dynamic
+
+    def BlochSpherePath(self, file_name = 'anim'):
+
+        tlist = np.linspace(0.001, 4 * self.T, 4 * 301)
+        sx = [self.cosφ(t) * self.sinθ(self.res.x, t) for t in tlist]
+        sy = [self.sinφ(t) * self.sinθ(self.res.x, t) for t in tlist]
+        sz = [self.cosθ(self.res.x, t) for t in tlist]
+
+        fig = plt.figure(figsize=[10.4, 8.8], dpi=100.0)
+        ax = Axes3D(fig, azim=-40, elev=30, auto_add_to_figure=False)
+        fig.add_axes(ax)
+        sphere = qt.Bloch(axes=ax)
+
+        def animate(i):
+            sphere.clear()
+            sphere.add_points([sx[:i + 1], sy[:i + 1], sz[:i + 1]])
+            sphere.make_sphere()
+            return ax
+
+        def init():
+            sphere.vector_color = ['r']
+            return ax
+
+        ani = animation.FuncAnimation(fig, animate, np.arange(len(sx)),
+                                      init_func=init, blit=False, repeat=False)
+        ani.save(file_name+'.mp4', fps=20)
+
+
+    def PlotDrives(self, tlist_int):
+
+        figure(figsize=(10, 6), dpi=80)
+
+
+        plt.plot(tlist_int / self.T, [self.Vx(t) for t in tlist_int], '.-', color='forestgreen', label=r'$V_x(t)$')
+        plt.plot(tlist_int / self.T, [self.Vy( t) for t in tlist_int], '.-', color='gold', label=r'$V_y(t)$')
+        plt.plot(tlist_int / self.T, [self.Vz(t) for t in tlist_int], '.-', color='royalblue', label=r'$V_z(t)$')
+
+        plt.grid()
+        plt.xlabel('time/T', size=20)
+        plt.ylabel('drive', size=20)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.legend(fontsize=15)
+
+    def Plot_gt(self, tlist):
+
+
+
+        # tlist = np.linspace(0, self.T, 200)
+
+        figure(figsize=(10, 6), dpi=80)
+
+
+        plt.plot(tlist / self.T, [self.g_t(self.res.x, 'x', t) for t in tlist], color='red', label=r'$g_x(t)$')
+        plt.plot(tlist / self.T, [self.g_t(self.res.x, 'y', t) for t in tlist], color='pink', label=r'$g_y(t)$')
+        plt.plot(tlist / self.T, [self.g_t(self.res.x, 'z', t) for t in tlist], color='lightblue', label=r'$g_z(t)$')
+        plt.plot(tlist / self.T,
+                 [self.g_t(self.res.x, 'x', t) ** 2 + self.g_t(self.res.x, 'y', t) ** 2 + self.g_t(self.res.x, 'z', t) ** 2 for t in tlist],
+                 color='blue', label=r'sum')
+
+        plt.grid()
+        plt.xlabel('time/T', size=20)
+        plt.ylabel('g coefficients', size=20)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.legend(fontsize=15)
+
+
+    # def GeneralStateDynamics(t, Psi0):
+    #     f_modes_t = qt.floquet_modes_t_lookup(fmodes_table, t, T)
+    #     f_coeff = qt.floquet_state_decomposition(f_modes, f_energies, Psi0)
+    #     psi_t = qt.floquet_wavefunction(f_modes_t, f_energies, f_coeff, t)
+    #
+    #     return psi_t
+
+
+    # f_modes, f_energies = qt.floquet_modes(
+    #     H=H_dynamic, T=T, sort=True, options=opts
+    # )
