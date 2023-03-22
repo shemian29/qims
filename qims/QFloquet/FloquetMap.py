@@ -78,7 +78,7 @@ class DirectFloquetMap:
         return np.real(np.sum(self.g_s(gf, choice, 'c') * np.exp([1j * m * self.wd * t for m in self.m_list])))
 
     def spectral_density(self, m):
-        return (np.abs(m) - 3) ** 2
+        return (np.abs(m) - 2.7) ** 2
 
     def g_s(self, g_full, channel, choice):
         lng = int((len(self.m_list) + 1) / 2)
