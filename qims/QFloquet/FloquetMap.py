@@ -25,7 +25,15 @@ class DirectFloquetMap:
         self.T = 2 * np.pi / self.wd
         self.Ez = Ez
         self.tlist = np.linspace(0, self.T, len(self.m_list))
+        self.optimized = 'Not yet'
 
+    def _repr_latex_(self):
+
+        # string = r'$\\ \begin{pmatrix} e^\cos \theta(t)  \\a   \end{pmatrix} $'
+        string = 'Floquet qubit of the form: '
+        string = string + r'$\vert v_{\pm}(t)\rangle = e^{i \beta_{\pm}(t)}\left( \begin{array}{c} \pm e^{-i \varphi(t)/2} \cos\left(\frac{\theta(t)}{2}\right)  \\ e^{i \varphi(t)/2}\sin\left(\frac{\theta(t)}{2}\right)  \end{array} \right).   $   '
+        string = string + '   Optimized: ' + self.optimized
+        return string
     def Optimal_gs(self, maxiter = 100):
 
         eq_cons = {'type': 'eq',
