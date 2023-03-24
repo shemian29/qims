@@ -133,23 +133,29 @@ class DirectFloquetMap:
         return self.g_complete(g_pick)
 
     def rate_grad(self, g_full):
-        lng = int((len(self.m_list) + 1) / 2)
-
+        mcut = int((len(self.m_list) - 1) / 2)
+        lng = int((len(self.m_list) +1 ) / 2)
         ϵ01 = g_full[-1]
-        g_pick = [2*g_full[0]*self.spectral_density(self.m_list[lng-1]*self.wd - ϵ01)]
+        g_pick = [2*g_full[0]*self.spectral_density( - ϵ01)]
 
-        g_pick = g_pick + (4*g_full[1: lng] * self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+        g_pick = g_pick + (2 * (g_full[1: mcut+1] + g_full[3*mcut +2: 4*mcut+2]) * self.spectral_density(-self.m_list[mcut+1:2*mcut+1] * self.wd - ϵ01)\
+                           +2 * (g_full[1: mcut +1] - g_full[3*mcut+2: 4*mcut +2]) * self.spectral_density(self.m_list[mcut+1:2*mcut +1] * self.wd - ϵ01)).tolist()
 
-        g_pick = g_pick + (4*g_full[lng:2 * lng - 1]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+
+        g_pick = g_pick + (2 * (g_full[mcut+1: 2*mcut+1] + g_full[2*mcut +2: 3*mcut+2]) * self.spectral_density(self.m_list[mcut+1:2*mcut+1] * self.wd - ϵ01)\
+                           +2 * (g_full[mcut+1: 2*mcut +1] - g_full[2*mcut+2: 3*mcut +2]) * self.spectral_density(-self.m_list[mcut+1:2*mcut +1] * self.wd - ϵ01)).tolist()
 
         # ------------------------------------------------------------------------------
 
 
-        g_pick = g_pick + [2*g_full[2 * lng - 1] * self.spectral_density(self.m_list[lng - 1]*self.wd- ϵ01)]
+        g_pick = g_pick + [2*g_full[2*mcut+1]*self.spectral_density( - ϵ01)]
 
-        g_pick = g_pick + (4*g_full[2 * lng :3 * lng - 1]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+        g_pick = g_pick + (2 * (g_full[mcut+1: 2*mcut+1] + g_full[2*mcut +2: 3*mcut+2]) * self.spectral_density(self.m_list[mcut+1:2*mcut+1] * self.wd - ϵ01)\
+                           +2 * (-g_full[mcut+1: 2*mcut +1] + g_full[2*mcut+2: 3*mcut +2]) * self.spectral_density(-self.m_list[mcut+1:2*mcut +1] * self.wd - ϵ01)).tolist()
 
-        g_pick = g_pick + (4*g_full[3 * lng - 1:4 * lng - 2]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+
+        g_pick = g_pick + (2 * (-g_full[1: mcut+1] + g_full[3*mcut +2: 4*mcut+2]) * self.spectral_density(self.m_list[mcut+1:2*mcut+1] * self.wd - ϵ01)\
+                           +2 * (g_full[1: mcut +1] + g_full[3*mcut+2: 4*mcut +2]) * self.spectral_density(-self.m_list[mcut+1:2*mcut +1] * self.wd - ϵ01)).tolist()
 
         # ------------------------------------------------------------------------------
 
