@@ -6,7 +6,7 @@ from qims.QMB.qdynamics import SpinOp_t_SpinOp_0, SytSy_alt
 from qims.QMB.qplot import PlotTowers
 from qims.QMB.qoptimize import error, opt_towers, GenScarData
 
-from qims.QFloquet.FloquetQubit import FloquetQubit
+# from qims.QFloquet.FloquetQubit import FloquetQubit
 from qims.QFloquet.FloquetMap import DirectFloquetMap
 from qims.QFloquet.DecoherenceRates import filter_coefficients, dephasing_rate, Sf
 from qims.QFloquet.Spectrum import FloquetSpectrum, flat_dev

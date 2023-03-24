@@ -34,7 +34,7 @@ class DirectFloquetMap:
         string = string + r'$\vert v_{\pm}(t)\rangle = e^{i \beta_{\pm}(t)}\left( \begin{array}{c} \pm e^{-i \varphi(t)/2} \cos\left(\frac{\theta(t)}{2}\right)  \\ e^{i \varphi(t)/2}\sin\left(\frac{\theta(t)}{2}\right)  \end{array} \right).   $   '
         string = string + '   Optimized: ' + self.optimized
         return string
-    def Optimal_gs(self, maxiter = 100):
+    def Optimal_gs(self, maxiter = 100, jac = True):
 
         eq_cons = {'type': 'eq',
                    'fun': lambda g_full: [np.linalg.norm(
@@ -54,9 +54,14 @@ class DirectFloquetMap:
         g0 = np.zeros(6 * lng - 3 + 1) + .00001
         g0[0] = 1
         g0[-1] = self.Ez
-        self.res = minimize(self.rate, g0, method='SLSQP', jac=self.rate_grad,
-                       constraints=[eq_cons, eq_cons2],
-                       options={'disp': True, "maxiter": maxiter})
+        if jac==True:
+            self.res = minimize(self.rate, g0, method='SLSQP', jac=self.rate_grad,
+                           constraints=[eq_cons, eq_cons2],
+                           options={'disp': True, "maxiter": maxiter})
+        elif jac==False:
+            self.res = minimize(self.rate, g0, method='SLSQP',
+                           constraints=[eq_cons, eq_cons2],
+                           options={'disp': True, "maxiter": maxiter})
         self.ϵ01 = self.res.x[-1]
         print('Constraint evaluations: ', eq_cons['fun'](self.res.x), eq_cons2['fun'](self.res.x))
         self.optimized = 'Yes'
@@ -85,11 +90,11 @@ class DirectFloquetMap:
 
         return np.real(np.sum(self.g_s(gf, choice, 'c') * np.exp([1j * m * self.wd * t for m in self.m_list])))
 
-    def spectral_density(self, m):
-        return (np.abs(m) - 2.7*self.wd) ** 2
+    def spectral_density(self, w):
+        return 1.0*(w**2 - (3*self.wd)**2) ** 2
 
-    def grad_spectral_density(self, m):
-        return 2*(np.abs(m) - 2.7*self.wd)
+    def grad_spectral_density(self, w):
+        return (4.0)*w*(w**2 - (3*self.wd)**2)
 
     def g_s(self, g_full, channel, choice):
         lng = int((len(self.m_list) + 1) / 2)
@@ -130,35 +135,37 @@ class DirectFloquetMap:
     def rate_grad(self, g_full):
         lng = int((len(self.m_list) + 1) / 2)
 
+        ϵ01 = g_full[-1]
+        g_pick = [2*g_full[0]*self.spectral_density(self.m_list[lng-1]*self.wd - ϵ01)]
 
-        g_pick = [2*g_full[0]*self.spectral_density(self.m_list[lng-1])]
+        g_pick = g_pick + (4*g_full[1: lng] * self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
 
-        g_pick = g_pick + (4*g_full[1: lng] * self.spectral_density(self.m_list[lng:])).tolist()
-
-        g_pick = g_pick + (4*g_full[lng:2 * lng - 1]*self.spectral_density(self.m_list[lng:])).tolist()
-
-        # ------------------------------------------------------------------------------
-
-
-        g_pick = g_pick + [2*g_full[2 * lng - 1] * self.spectral_density(self.m_list[lng - 1])]
-
-        g_pick = g_pick + (4*g_full[2 * lng :3 * lng - 1]*self.spectral_density(self.m_list[lng:])).tolist()
-
-        g_pick = g_pick + (4*g_full[3 * lng - 1:4 * lng - 2]*self.spectral_density(self.m_list[lng:])).tolist()
+        g_pick = g_pick + (4*g_full[lng:2 * lng - 1]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
 
         # ------------------------------------------------------------------------------
 
-        g_pick = g_pick + [2*g_full[4 * lng - 2] * self.spectral_density(self.m_list[lng - 1])]
 
-        g_pick = g_pick + (4*g_full[4 * lng - 1:5 * lng - 2]*self.spectral_density(self.m_list[lng:])).tolist()
+        g_pick = g_pick + [2*g_full[2 * lng - 1] * self.spectral_density(self.m_list[lng - 1]*self.wd- ϵ01)]
+
+        g_pick = g_pick + (4*g_full[2 * lng :3 * lng - 1]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+
+        g_pick = g_pick + (4*g_full[3 * lng - 1:4 * lng - 2]*self.spectral_density(self.m_list[lng:]*self.wd- ϵ01)).tolist()
+
+        # ------------------------------------------------------------------------------
+
+        g_pick = g_pick + [2*g_full[4 * lng - 2] * self.spectral_density(self.m_list[lng - 1]*self.wd)]
+
+        g_pick = g_pick + (4*g_full[4 * lng - 1:5 * lng - 2]*self.spectral_density(self.m_list[lng:]*self.wd)).tolist()
 
 
-        g_pick = g_pick + (4*g_full[5 * lng - 2:6 * lng - 3]*self.spectral_density(self.m_list[lng:])).tolist()
+        g_pick = g_pick + (4*g_full[5 * lng - 2:6 * lng - 3]*self.spectral_density(self.m_list[lng:]*self.wd)).tolist()
 
+        g_x_c = self.g_s(g_full, 'x', 'c')
+        g_y_c = self.g_s(g_full, 'y', 'c')
 
-        g_pick = g_pick
+        g_pick = g_pick + [np.dot((np.abs(g_x_c + 1j * g_y_c) ** 2), -self.grad_spectral_density(self.m_list * self.wd - ϵ01))]
 
-        return np.array(g_pick+[0])
+        return np.array(g_pick)
 
     def g_complete(self, g_a_c):
         return np.concatenate((np.conjugate(np.flip(g_a_c[1:])), g_a_c))
@@ -238,7 +245,7 @@ class DirectFloquetMap:
                  label=r'$g_{+}$')
         plt.plot(self.m_list * self.wd, np.abs(self.g_s(self.res.x, 'z', 'c')), 'g.-', label=r'$g_{z}$')
 
-        plt.plot(self.wd * self.m_list, 0.1 * self.spectral_density(self.wd * self.m_list), '.-', color='purple', label='S(m)')
+        plt.plot(self.wd * self.m_list, 0.01 * self.spectral_density(self.wd * self.m_list), '.-', color='purple', label='S(m)')
 
         plt.ylim([-0.1, 1.5])
         plt.legend(fontsize=15)
