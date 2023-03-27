@@ -107,17 +107,17 @@ class DirectFloquetMap:
         )
         self.optimized = "Yes"
 
-    def minimize_gradual(self):
+    def minimize_gradual(self, step = 10):
         lng = int((len(self.m_list) + 1) / 2)
         g0 = np.zeros(6 * lng - 3 + 1) + 0.00001
         g0[0] = 1
         g0[-1] = self.Ez
 
-        maxiter = 10
+        maxiter = np.floor(1.5*self.omega_0/self.wd)#10
         message = 'Iteration limit reached'
         scan = []
         while message == 'Iteration limit reached':
-            maxiter = maxiter + 10
+            maxiter = maxiter + step
             self.Optimal_gs(g0 = g0, maxiter=maxiter, jac=True)
             message = self.res.message
             g0 = self.res.x
@@ -162,10 +162,10 @@ class DirectFloquetMap:
         )
 
     def spectral_density(self, w):
-        return 1.0 * (w**2 - (3 * self.wd) ** 2) ** 2
+        return 1.0 * (w**2 - (1) ** 2) ** 2 + w
 
     def grad_spectral_density(self, w):
-        return (4.0) * w * (w**2 - (3 * self.wd) ** 2)
+        return (4.0) * w * (w**2 - (1) ** 2) + 1
 
     def g_s(self, g_full, channel, choice):
         lng = int((len(self.m_list) + 1) / 2)
