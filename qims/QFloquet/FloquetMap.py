@@ -107,6 +107,22 @@ class DirectFloquetMap:
         )
         self.optimized = "Yes"
 
+    def minimize_gradual(self):
+        lng = int((len(self.m_list) + 1) / 2)
+        g0 = np.zeros(6 * lng - 3 + 1) + 0.00001
+        g0[0] = 1
+        g0[-1] = self.Ez
+
+        maxiter = 10
+        message = 'Iteration limit reached'
+        scan = []
+        while message == 'Iteration limit reached':
+            maxiter = maxiter + 10
+            self.Optimal_gs(g0 = g0, maxiter=maxiter, jac=True)
+            message = self.res.message
+            g0 = self.res.x
+            scan.append([maxiter, self.res.fun])
+            print(scan)
 
     def δexp2jβ(self, gfull, t):
         f1 = ((self.g_t(gfull, "x", t) + 1j * self.g_t(gfull, "y", t)) ** 2) / (
