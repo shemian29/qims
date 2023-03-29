@@ -18,6 +18,7 @@ class DirectFloquetMap:
         self.dt = 0.0001
 
         self.m_list = np.arange(-mcut, mcut + 1)
+        self.mcut = mcut
         self.wd = wd
         self.T = 2 * np.pi / self.wd
         self.Ez = Ez
@@ -113,12 +114,13 @@ class DirectFloquetMap:
         g0[0] = 1
         g0[-1] = self.Ez
 
-        maxiter = np.floor(1.5*self.omega_0/self.wd)#10
+        maxiter = 10#np.floor(1.5*self.omega_0/self.wd)#10
+
         message = 'Iteration limit reached'
         scan = []
         while message == 'Iteration limit reached':
             maxiter = maxiter + step
-            self.Optimal_gs(g0 = g0, maxiter=maxiter, jac=True)
+            self.Optimal_gs(g0 = g0, maxiter=maxiter, jac=False)
             message = self.res.message
             g0 = self.res.x
             scan.append([maxiter, self.res.fun])
@@ -161,12 +163,54 @@ class DirectFloquetMap:
             )
         )
 
+    def Sf(self,ω):
+        """Spectral function. Frequency in GHz."""
+        δf = 1.8 * (10 ** (-6))
+        EL = 1.3  # GHz
+        φge = 1.996
+        Af = 2 * np.pi * δf * EL * np.abs(φge)
+        return (Af ** 2) * np.abs((2 * np.pi) / ω) * (10 ** 6) * (2 * np.pi)  # kHz
+
+    def Sd(self,ω):
+
+        EC = 0.5  # GHz
+        Temp = 15 * (10 ** (-3))  # Kelvin
+        ħ = 1.05457182 * (10 ** (-34))  # Js
+        kB = 1.380649 * (10 ** (-23))  # J/K
+        λ = (2 * np.pi * ħ / kB) * (10 ** 9)  # K/GHz
+        α = np.abs(np.cosh(λ * ω / (2 * Temp)) / np.sinh(λ * ω / (2 * Temp)) + 1) / 2
+        φge = 1.996
+        tanδc = 1.1 * (10 ** (-6))
+        Ad = (np.pi ** 2) * tanδc * (φge ** 2) / EC
+        return α * Ad * ((ω / (2 * np.pi)) ** 2) * (10 ** 6) * (2 * np.pi)  # kHz
+
+    def grad_Sf(self,ω):
+        """Spectral function. Frequency in GHz."""
+        δf = 1.8 * (10 ** (-6))
+        EL = 1.3  # GHz
+        φge = 1.996
+        Af = 2 * np.pi * δf * EL * np.abs(φge)
+        return (-1 / ω) * self.Sf(ω)  # kHz/GHz
+
+    def grad_Sd(self,ω):
+
+        EC = 0.5  # GHz
+        Temp = 15 * (10 ** (-3))  # Kelvin
+        ħ = 1.05457182 * (10 ** (-34))  # Js
+        kB = 1.380649 * (10 ** (-23))  # J/K
+        λ = (2 * np.pi * ħ / kB) * (10 ** 9)  # K/GHz
+        α = np.abs(np.cosh(λ * ω / (2 * Temp)) / np.sinh(λ * ω / (2 * Temp)) + 1) / 2
+        φge = 1.996
+        tanδc = 1.1 * (10 ** (-6))
+        Ad = (np.pi ** 2) * tanδc * (φge ** 2) / EC
+        return self.Sd(ω) * (2 * kB * Temp + ħ * ω * (1 - np.cosh(λ * ω / (2 * Temp)) / np.sinh(λ * ω / (2 * Temp)))) / (
+                    kB * Temp * ω)  # kHz/GHz
     def spectral_density(self, w):
-        return 1.0 * (w**2 - (1) ** 2) ** 2 + w
-
+        # return 1.0 * (w**2 - (1) ** 2) ** 2 + w
+        return (self.Sf(w) + self.Sd(w))
     def grad_spectral_density(self, w):
-        return (4.0) * w * (w**2 - (1) ** 2) + 1
-
+        # return (4.0) * w * (w**2 - (1) ** 2) + 1
+        return self.grad_Sd(w) + self.grad_Sf(w)
     def g_s(self, g_full, channel, choice):
         lng = int((len(self.m_list) + 1) / 2)
 
@@ -341,11 +385,12 @@ class DirectFloquetMap:
         g_y_c = self.g_s(g_full, "y", "c")
         g_z_c = self.g_s(g_full, "z", "c")
         ϵ01 = g_full[-1]
-
+        g_z_c = np.delete(g_z_c,self.mcut)
+        mlist = np.delete(self.m_list, self.mcut)
         return np.dot(
             (np.abs(g_x_c + 1j * g_y_c) ** 2),
             self.spectral_density(self.m_list * self.wd - ϵ01),
-        ) + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(self.m_list * self.wd))
+        ) + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
 
     def φ(self, t):
         return self.wd * t
@@ -562,6 +607,18 @@ class DirectFloquetMap:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.legend(fontsize=15)
+
+    def PlotSpectralDensity(self):
+
+        figure(figsize=(10, 10), dpi=80)
+        wlist = np.linspace(-1, 1, 800)
+
+
+        plt.plot(wlist, [(self.spectral_density(ω)) for ω in wlist], color='red')
+        plt.grid()
+        plt.yscale('log')
+        plt.ylim([0.5, 30])
+        plt.xlim([-0.83, 0.83])
 
     # def GeneralStateDynamics(t, Psi0):
     #     f_modes_t = qt.floquet_modes_t_lookup(fmodes_table, t, T)
