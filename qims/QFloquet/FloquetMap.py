@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
 
+δf = 1.8 * (10 ** (-6))
+EL = 1.3  # GHz
+φge = 1.996
+Af = 2 * np.pi * δf * EL * np.abs(φge)
 
 class DirectFloquetMap:
     def __init__(self, mcut=10, wd=1.0, Ez=0.5):
@@ -22,9 +26,8 @@ class DirectFloquetMap:
         self.wd = wd
         self.T = 2 * np.pi / self.wd
         self.Ez = Ez
-        self.tlist = np.linspace(0, self.T, len(self.m_list))
+        self.tlist = np.linspace(0, self.T, 2*len(self.m_list))
         self.optimized = "Not yet"
-
     def _repr_latex_(self):
 
         # string = r'$\\ \begin{pmatrix} e^\cos \theta(t)  \\a   \end{pmatrix} $'
@@ -87,7 +90,7 @@ class DirectFloquetMap:
                 method="SLSQP",
                 jac=self.rate_grad,
                 constraints=[eq_cons, eq_cons2],
-                options={"disp": False, "maxiter": maxiter},
+                options={"disp": True, "maxiter": maxiter},
             )
 
 
@@ -98,7 +101,7 @@ class DirectFloquetMap:
                 g0,
                 method="SLSQP",
                 constraints=[eq_cons, eq_cons2],
-                options={"disp": False, "maxiter": maxiter},
+                options={"disp": True, "maxiter": maxiter},
             )
         self.ϵ01 = self.res.x[-1]
         print(
@@ -107,7 +110,6 @@ class DirectFloquetMap:
             eq_cons2["fun"](self.res.x),
         )
         self.optimized = "Yes"
-
     def minimize_gradual(self, step = 10):
         lng = int((len(self.m_list) + 1) / 2)
         g0 = np.zeros(6 * lng - 3 + 1) + 0.00001
@@ -115,7 +117,7 @@ class DirectFloquetMap:
         g0[-1] = self.Ez
 
         maxiter = 10#np.floor(1.5*self.omega_0/self.wd)#10
-
+        tlist = np.linspace(0., self.T - 0., 101)
         message = 'Iteration limit reached'
         scan = []
         while message == 'Iteration limit reached':
@@ -126,12 +128,14 @@ class DirectFloquetMap:
             scan.append([maxiter, self.res.fun])
             print(scan)
 
+            self.Plot_gt(tlist)
+            plt.show()
+
     def δexp2jβ(self, gfull, t):
         f1 = ((self.g_t(gfull, "x", t) + 1j * self.g_t(gfull, "y", t)) ** 2) / (
             1 - self.g_t(gfull, "z", t) ** 2
         )
         return f1
-
     def dδexp2jβdt(self, gfull, t):
 
         f1 = ((self.g_t(gfull, "x", t) + 1j * self.g_t(gfull, "y", t)) ** 2) / (
@@ -143,7 +147,6 @@ class DirectFloquetMap:
         ) / (1 - self.g_t(gfull, "z", t + self.dt) ** 2)
 
         return (f2 - f1) / self.dt
-
     def g_mat(self, g_coeffs):
 
         gs = diags(
@@ -153,7 +156,6 @@ class DirectFloquetMap:
         ).toarray()
 
         return gs
-
     def g_t(self, gf, choice, t):
 
         return np.real(
@@ -162,7 +164,6 @@ class DirectFloquetMap:
                 * np.exp([1j * m * self.wd * t for m in self.m_list])
             )
         )
-
     def Sf(self,ω):
         """Spectral function. Frequency in GHz."""
         δf = 1.8 * (10 ** (-6))
@@ -170,7 +171,6 @@ class DirectFloquetMap:
         φge = 1.996
         Af = 2 * np.pi * δf * EL * np.abs(φge)
         return (Af ** 2) * np.abs((2 * np.pi) / ω) * (10 ** 6) * (2 * np.pi)  # kHz
-
     def Sd(self,ω):
 
         EC = 0.5  # GHz
@@ -183,7 +183,6 @@ class DirectFloquetMap:
         tanδc = 1.1 * (10 ** (-6))
         Ad = (np.pi ** 2) * tanδc * (φge ** 2) / EC
         return α * Ad * ((ω / (2 * np.pi)) ** 2) * (10 ** 6) * (2 * np.pi)  # kHz
-
     def grad_Sf(self,ω):
         """Spectral function. Frequency in GHz."""
         δf = 1.8 * (10 ** (-6))
@@ -191,7 +190,6 @@ class DirectFloquetMap:
         φge = 1.996
         Af = 2 * np.pi * δf * EL * np.abs(φge)
         return (-1 / ω) * self.Sf(ω)  # kHz/GHz
-
     def grad_Sd(self,ω):
 
         EC = 0.5  # GHz
@@ -376,33 +374,35 @@ class DirectFloquetMap:
         ]
 
         return np.array(g_pick)
-
     def g_complete(self, g_a_c):
         return np.concatenate((np.conjugate(np.flip(g_a_c[1:])), g_a_c))
-
     def rate(self, g_full):
         g_x_c = self.g_s(g_full, "x", "c")
         g_y_c = self.g_s(g_full, "y", "c")
         g_z_c = self.g_s(g_full, "z", "c")
         ϵ01 = g_full[-1]
+
+        gamma_0 = Af*2*(np.abs(g_z_c[self.mcut])**2)*4*(10**6)
         g_z_c = np.delete(g_z_c,self.mcut)
         mlist = np.delete(self.m_list, self.mcut)
-        return np.dot(
+        return gamma_0 + np.dot(
             (np.abs(g_x_c + 1j * g_y_c) ** 2),
             self.spectral_density(self.m_list * self.wd - ϵ01),
         ) + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
 
+
+
+
+
+
     def φ(self, t):
         return self.wd * t
-
     def dφdt(self, t):
         f1 = self.φ(t)
         f2 = self.φ(t + self.dt)
         return (f2 - f1) / self.dt
-
     def cosφ(self, t):
         return np.cos(self.φ(t))
-
     def sinφ(self, t):
         return np.sin(self.φ(t))
 
@@ -410,19 +410,15 @@ class DirectFloquetMap:
         return g_full[-1] - np.real(
             self.dδexp2jβdt(g_full, t) / (2 * 1j * self.δexp2jβ(g_full, t))
         )
-
     def cosθ(self, g_full, t):
         return self.g_t(g_full, "z", t)
-
     def sinθ(self, g_full, t):
         return np.sqrt(1 - self.cosθ(g_full, t) ** 2)
-
     def dgzzdt(self, g_full, t):
         f1 = self.g_t(g_full, "z", t)
         f2 = self.g_t(g_full, "z", t + self.dt)
 
         return (f2 - f1) / self.dt
-
     def dθdt(self, g_full, t):
         return -self.dgzzdt(g_full, t) / self.sinθ(g_full, t)
 
@@ -431,13 +427,11 @@ class DirectFloquetMap:
             self.A1(self.res.x, t) * self.cosφ(t) * self.sinθ(self.res.x, t)
             + self.dθdt(self.res.x, t) * self.sinφ(t)
         )
-
     def Vy(self, t):
         return 0.5 * (
             self.A1(self.res.x, t) * self.sinφ(t) * self.sinθ(self.res.x, t)
             + self.dθdt(self.res.x, t) * self.cosφ(t)
         )
-
     def Vz(self, t):
         return 0.5 * (
             self.A1(self.res.x, t) * self.cosθ(self.res.x, t) - self.dφdt(t) - self.Ez
@@ -486,7 +480,6 @@ class DirectFloquetMap:
         plt.xticks(fontsize=15)
         plt.yticks(fontsize=15)
         plt.grid()
-
     def Hamiltonian(self):
 
         sx = qt.sigmax()
@@ -504,7 +497,6 @@ class DirectFloquetMap:
         H_dynamic.append([sz / 2, lambda t, args: self.Vz(t)])
 
         return H_dynamic
-
     def BlochSpherePath(self, file_name="anim"):
 
         tlist = np.linspace(0.001, 4 * self.T, 4 * 301)
@@ -531,7 +523,6 @@ class DirectFloquetMap:
             fig, animate, np.arange(len(sx)), init_func=init, blit=False, repeat=False
         )
         ani.save(file_name + ".mp4", fps=20)
-
     def PlotDrives(self, tlist_int):
 
         figure(figsize=(10, 6), dpi=80)
@@ -564,7 +555,6 @@ class DirectFloquetMap:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.legend(fontsize=15)
-
     def Plot_gt(self, tlist):
 
         # tlist = np.linspace(0, self.T, 200)
@@ -607,7 +597,6 @@ class DirectFloquetMap:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.legend(fontsize=15)
-
     def PlotSpectralDensity(self):
 
         figure(figsize=(10, 10), dpi=80)
