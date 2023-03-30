@@ -38,6 +38,10 @@ class DirectFloquetMap:
         )
         string = string + "   Optimized: " + self.optimized
         return string
+    def MaxAmp(self,g_coeff, t):
+        return np.max(
+            np.abs([self.A1(g_coeff, t)**2,self.dθdt_squared(g_coeff, t) ])
+        )
 
     def Optimal_gs(self, g0, maxiter=100, jac=True):
 
@@ -82,6 +86,12 @@ class DirectFloquetMap:
             ],
         }
 
+        ineq_cons = {
+            "type": "ineq",
+            "fun": lambda g_full: [
+                0.1-np.abs(np.max([self.MaxAmp(g_full, t) for t in self.tlist]))
+            ],
+        }
 
         if jac == True:
             self.res = minimize(
@@ -89,7 +99,7 @@ class DirectFloquetMap:
                 g0,
                 method="SLSQP",
                 jac=self.rate_grad,
-                constraints=[eq_cons, eq_cons2],
+                constraints=[eq_cons, eq_cons2, ineq_cons],
                 options={"disp": True, "maxiter": maxiter},
             )
 
@@ -100,7 +110,7 @@ class DirectFloquetMap:
                 self.rate,
                 g0,
                 method="SLSQP",
-                constraints=[eq_cons, eq_cons2],
+                constraints=[eq_cons, eq_cons2, ineq_cons],
                 options={"disp": True, "maxiter": maxiter},
             )
         self.ϵ01 = self.res.x[-1]
@@ -108,6 +118,7 @@ class DirectFloquetMap:
             "Constraint evaluations: ",
             eq_cons["fun"](self.res.x),
             eq_cons2["fun"](self.res.x),
+            ineq_cons["fun"](self.res.x)
         )
         self.optimized = "Yes"
     def minimize_gradual(self, step = 10):
@@ -130,7 +141,8 @@ class DirectFloquetMap:
 
             self.Plot_gt(tlist)
             plt.show()
-
+            self.PlotDrives(tlist)
+            plt.show()
     def δexp2jβ(self, gfull, t):
         f1 = ((self.g_t(gfull, "x", t) + 1j * self.g_t(gfull, "y", t)) ** 2) / (
             1 - self.g_t(gfull, "z", t) ** 2
@@ -385,10 +397,10 @@ class DirectFloquetMap:
         gamma_0 = Af*2*(np.abs(g_z_c[self.mcut])**2)*4*(10**6)
         g_z_c = np.delete(g_z_c,self.mcut)
         mlist = np.delete(self.m_list, self.mcut)
-        return gamma_0 + np.dot(
+        return 0.5*np.dot(
             (np.abs(g_x_c + 1j * g_y_c) ** 2),
             self.spectral_density(self.m_list * self.wd - ϵ01),
-        ) + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
+        ) + gamma_0 + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
 
 
 
@@ -421,7 +433,8 @@ class DirectFloquetMap:
         return (f2 - f1) / self.dt
     def dθdt(self, g_full, t):
         return -self.dgzzdt(g_full, t) / self.sinθ(g_full, t)
-
+    def dθdt_squared(self, g_full, t):
+        return (self.dgzzdt(g_full, t)**2) / (1 - self.cosθ(g_full, t) ** 2)
     def Vx(self, t):
         return 0.5 * (
             self.A1(self.res.x, t) * self.cosφ(t) * self.sinθ(self.res.x, t)
