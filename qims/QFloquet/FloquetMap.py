@@ -6,6 +6,7 @@ from matplotlib.pyplot import figure
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 δf = 1.8 * (10 ** (-6))
 EL = 1.3  # GHz
@@ -138,11 +139,12 @@ class DirectFloquetMap:
             g0 = self.res.x
             scan.append([maxiter, self.res.fun])
             print(scan)
-
-            self.Plot_gt(tlist)
+            self.PlotData()
             plt.show()
-            self.PlotDrives(tlist)
-            plt.show()
+            # self.Plot_gt(tlist)
+            # plt.show()
+            # self.PlotDrives(tlist)
+            # plt.show()
     def δexp2jβ(self, gfull, t):
         f1 = ((self.g_t(gfull, "x", t) + 1j * self.g_t(gfull, "y", t)) ** 2) / (
             1 - self.g_t(gfull, "z", t) ** 2
@@ -632,3 +634,118 @@ class DirectFloquetMap:
     # f_modes, f_energies = qt.floquet_modes(
     #     H=H_dynamic, T=T, sort=True, options=opts
     # )
+
+    def PlotData(self):
+        tlist2 = np.linspace(0., self.T - 0., 101)
+        wlist = np.linspace(-1, 1, 800)
+
+        fig = plt.figure(figsize=(15., 15.))
+        grid = ImageGrid(fig, 111,  # similar to subplot(111)
+                         nrows_ncols=(1, 3),  # creates 2x2 grid of axes
+                         axes_pad=0.25,  # pad between axes in inch.
+                         )
+        grid[0].plot(
+            self.m_list * self.wd,
+            np.abs(
+                self.g_s(self.res.x, "x", "c") - 1j * self.g_s(self.res.x, "y", "c")
+            ),
+            ".-",
+            color="pink",
+            label=r"$g_{-}$",
+        )
+
+        grid[0].plot(
+            self.m_list * self.wd,
+            np.abs(
+                self.g_s(self.res.x, "x", "c") + 1j * self.g_s(self.res.x, "y", "c")
+            ),
+            ".-",
+            color="orange",
+            label=r"$g_{+}$",
+        )
+        grid[0].plot(
+            self.m_list * self.wd,
+            np.abs(self.g_s(self.res.x, "z", "c")),
+            "g.-",
+            label=r"$g_{z}$",
+        )
+
+        grid[0].grid(color="lightgray", linestyle="-", linewidth=0.35)
+
+        grid[1].plot(
+            tlist2 / self.T,
+            [self.g_t(self.res.x, "x", t) for t in tlist2],
+            color="red",
+            label=r"$g_x(t)$",
+        )
+        grid[1].plot(
+            tlist2 / self.T,
+            [self.g_t(self.res.x, "y", t) for t in tlist2],
+            color="pink",
+            label=r"$g_y(t)$",
+        )
+        grid[1].plot(
+            tlist2 / self.T,
+            [self.g_t(self.res.x, "z", t) for t in tlist2],
+            color="lightblue",
+            label=r"$g_z(t)$",
+        )
+
+        grid[1].plot(
+            tlist2 / self.T,
+            [
+                self.g_t(self.res.x, "x", t) ** 2
+                + self.g_t(self.res.x, "y", t) ** 2
+                + self.g_t(self.res.x, "z", t) ** 2
+                for t in tlist2
+            ],
+            color="blue",
+            label=r"sum",
+        )
+        # grid[1].set_aspect(0.4)
+        grid[1].grid(color="lightgray", linestyle="-", linewidth=0.35)
+
+        grid[0].plot(
+            self.wd * self.m_list,
+            self.spectral_density(self.wd * self.m_list + 0.0001),
+            ".",
+            color="purple",
+            label="S(m)",
+        )
+
+        grid[0].plot(wlist, [(self.spectral_density(ω)) for ω in wlist], color='red')
+        grid[0].grid(color="lightgray", linestyle="-", linewidth=0.35)
+
+        grid[0].set_ylim([-1, 4])
+
+        grid[2].plot(
+            tlist2 / self.T,
+            [self.Vx(t) for t in tlist2],
+            ".-",
+            color="forestgreen",
+            label=r"$V_x(t)$",
+        )
+        grid[2].plot(
+            tlist2 / self.T,
+            [self.Vy(t) for t in tlist2],
+            ".-",
+            color="gold",
+            label=r"$V_y(t)$",
+        )
+        grid[2].plot(
+            tlist2 / self.T,
+            [self.Vz(t) for t in tlist2],
+            ".-",
+            color="royalblue",
+            label=r"$V_z(t)$",
+        )
+        grid[2].grid(color="lightgray", linestyle="-", linewidth=0.35)
+
+        grid[0].legend()
+        grid[1].legend()
+        grid[2].legend()
+        grid[0].set_aspect(0.2)
+        grid[1].set_aspect(0.2)
+        grid[2].set_aspect(0.2)
+
+        grid[0].set_xlim([-0.75, 0.75])
