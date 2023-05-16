@@ -442,13 +442,65 @@ class DirectFloquetMap:
                     ]
                 )
 
-        rate = 0.5 * np.dot(
+        # rate = 0.5 * np.dot(
+        #     (np.abs(g_x_c + 1j * g_y_c) ** 2),
+        #     self.spectral_density(self.m_list * self.wd - ϵ01),
+        # ) + gamma_0 + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
+
+        dephasing = gamma_0 + 2*np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
+
+        depolarization = np.dot(
+            (np.abs(g_x_c - 1j * g_y_c) ** 2),
+            self.spectral_density(self.m_list * self.wd + ϵ01),
+        )
+
+        excitation = np.dot(
             (np.abs(g_x_c + 1j * g_y_c) ** 2),
             self.spectral_density(self.m_list * self.wd - ϵ01),
-        ) + gamma_0 + np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
+        )
+
+        rate = 0.5*(depolarization+excitation)+dephasing
+
+        return rate + norm_constr/(rate)**2
+
+    def rate_DF_vals(self, g_full):
+        g_x_c = self.g_s(g_full, "x", "c")
+        g_y_c = self.g_s(g_full, "y", "c")
+        g_z_c = self.g_s(g_full, "z", "c")
+        ϵ01 = g_full[-1]
+
+        gamma_0 = Af * 2 * (np.abs(g_z_c[self.mcut]) ) * 4 * (10 ** 6)
+        g_z_c = np.delete(g_z_c, self.mcut)
+        mlist = np.delete(self.m_list, self.mcut)
 
 
-        return rate + norm_constr
+        norm_constr = np.linalg.norm(
+                    [
+                        np.abs(
+                            self.g_t(g_full, "x", t) ** 2
+                            + self.g_t(g_full, "y", t) ** 2
+                            + self.g_t(g_full, "z", t) ** 2
+                            - 1
+                        )
+                        for t in self.tlist
+                    ]
+                )
+
+        dephasing = gamma_0 + 2*np.dot((np.abs(g_z_c) ** 2), self.spectral_density(mlist * self.wd))
+
+        depolarization = np.dot(
+            (np.abs(g_x_c - 1j * g_y_c) ** 2),
+            self.spectral_density(self.m_list * self.wd + ϵ01),
+        )
+
+        excitation = np.dot(
+            (np.abs(g_x_c + 1j * g_y_c) ** 2),
+            self.spectral_density(self.m_list * self.wd - ϵ01),
+        )
+
+        rate = 0.5*(depolarization+excitation)+dephasing
+
+        return [dephasing, depolarization,excitation,rate,norm_constr]
 
     def rate(self, g_full):
         g_x_c = self.g_s(g_full, "x", "c")
