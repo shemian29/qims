@@ -338,18 +338,16 @@ def cost_function(parameters: List[complex], hyper_parameter: float = 100, norma
 
     return (hstatic_matching(parameters)/decoh_rate + decoh_rate) / normalization
 
-    iteration += 1
 
+def record_differential_optimization_path(parameters, convergence=1):
+    global iteration_step, parameters_differential_evolution, rate_record, h0match_rec
 
-def callback_annealing(xk, f, context):
-    global iteration, monitor, rate_rec, h0match_rec
+    parameters_differential_evolution.append(parameters)
+    rate_record.append(decoherence_rate(parameters))
+    h0match_rec.append(hstatic_matching(parameters))
 
-    monitor.append(xk)
-    rate_rec.append(rate(xk))
-    h0match_rec.append(h0_matching(xk))
-    np.savetxt('monitor_FQ.txt', monitor, delimiter=',')
-    np.savetxt('iteration_FQ.txt', [iteration])
-    np.savetxt('rate_rec_FQ.txt', rate_rec)
+    np.savetxt('parameters_differential_evolution.txt', parameters_differential_evolution, delimiter=',')
+    np.savetxt('rate_record.txt', rate_record)
     np.savetxt('h0match_rec_FQ.txt', h0match_rec)
     print('Status: ', iteration, xk, f)
     print()
