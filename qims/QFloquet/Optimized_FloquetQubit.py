@@ -349,57 +349,40 @@ def record_differential_optimization_path(parameters, convergence=1):
     np.savetxt('parameters_differential_evolution.txt', parameters_differential_evolution, delimiter=',')
     np.savetxt('rate_record.txt', rate_record)
     np.savetxt('h0match_rec_FQ.txt', h0match_rec)
-    print('Status: ', iteration, xk, f)
-    print()
 
-    iteration += 1
+    iteration_step += 1
 
 
-def search_floquet_qubit(numfreq=2, maxiter=10000000):
-    global monitor, iteration, rate_rec, h0match_rec
+def search_floquet_qubit(number_frequencies: int = 2, maxiter: int = 10000000) -> scp.optimize.OptimizeResult:
+    """
+    Search for the optimal Floquet qubit parameters.
+
+    :param number_frequencies: Number of frequency components for each angle to optimize. The rest is assumed to be zero.
+    :param maxiter: maximum number of iterations for the optimization algorithm.
+
+    :return: data from differential evolution optimization algorithm
+
+    Example:
+    >>> search_floquet_qubit(number_frequencies=2, maxiter=10000000)
+    """
+
+    global parameters_differential_evolution, iteration, rate_record, h0match_rec
 
     iteration = 1
-    monitor = []
-    rate_rec = []
+    parameters_differential_evolution = []
+    rate_record = []
     h0match_rec = []
     return differential_evolution(
-        cost_function_normalized,
-        [(-10.0, 10.0) for i in range(3 * numfreq + 1)],
-        callback=callbackF,
+        cost_function,
+        [(-10.0, 10.0) for i in range(3 * number_frequencies + 1)],
+        callback=record_differential_optimization_path,
         disp=True,
-        workers=-1,
-        # x0= Rmat_0,
+        workers=-1, # Use all cores available
         popsize=100,
-        init="halton",
-        strategy="randtobest1bin",  # "currenttobest1bin", #"randtobest1bin",
+        init="halton", # Best initialization of parameters according to Scipy documentation
+        strategy="randtobest1bin", #This option appears to work well based on a few test cases # "currenttobest1bin", #"randtobest1bin",
         maxiter=maxiter,
     )
-    # return dual_annealing(
-    #                 cost_function_normalized,
-    #                 [(-10.0,10.0) for i in range(3*numfreq+1)],
-    #                 callback=callback_annealing,
-    #                 initial_temp = 5.e4,
-    #                 maxiter=maxiter,
-    #             )
-
-
-νfloquet = 0.3
-ωfloquet = 2 * np.pi * νfloquet
-T = 1 / νfloquet
-
-time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
-
-tlist = np.linspace(0, T, time_points)
-νlist = np.fft.rfftfreq(len(tlist), np.mean(np.diff(tlist)))
-
-νcut = νlist[-1]
-ωcut = 2 * np.pi * νcut
-
-dt = np.mean(np.diff(tlist))
-
-E01 = 2 * np.pi * 0.3
-cost0 = cost_function([E01, 0, 0, 0])
-cost_function([E01, 0, 0, 0]), cost_function_normalized([E01, 0, 0, 0])
 
 
 def plot_data(solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, dmat_timedot):
@@ -422,13 +405,13 @@ def plot_data(solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, d
     axs[0][0].legend()
 
     axs[1][0].set_title('periodic drives', fontsize=15)
-    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * sx).tr()
+    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * static_pauli["x"]).tr()
                                              for it in range(time_points)]) / E01, '.-', label=r'$h_x(t)$',
                    color=rgb_colors[0])
-    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * sy).tr()
+    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * static_pauli["y"]).tr()
                                              for it in range(time_points)]) / E01, '.-', label=r'$h_y(t)$',
                    color=rgb_colors[1])
-    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * sz).tr()
+    axs[1][0].plot(tlist / T, 0.5 * np.real([(h_time[it] * static_pauli["z"]).tr()
                                              for it in range(time_points)]) / E01, '.-', label=r'$h_z(t)$',
                    color=rgb_colors[2])
     axs[1][0].set_xlim([0, 1])
@@ -436,7 +419,7 @@ def plot_data(solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, d
     axs[1][0].set_ylabel(r'$h_a(t)/E_{01}$', fontsize=15)
     axs[1][0].legend()
 
-    axs[0][1].plot(rate_data / rate([E01, 0, 0, 0]), '.-');
+    axs[0][1].plot(rate_data / decoherence_rate([E01, 0, 0, 0]), '.-');
     axs[0][1].set_title('iteration = ' + str(iteration))
     axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma^{(0)}_2$', fontsize=15)
 
