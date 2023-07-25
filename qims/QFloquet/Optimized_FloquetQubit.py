@@ -32,12 +32,9 @@ tlist = np.linspace(0, T, time_points)
 
 dt = np.mean(np.diff(tlist))
 
-sx = qt.sigmax()
-sy = qt.sigmay()
-sz = qt.sigmaz()
-s = {0: sx,
-     1: sy,
-     2: sz}
+E01 = 2 * np.pi * 0.3
+# cost0 = cost_function([E01, 0, 0, 0])
+# cost_function([E01, 0, 0, 0]), cost_function_normalized([E01, 0, 0, 0])
 
 
 def dmat(φ: float, θ: float, β: float) -> ndarray:
