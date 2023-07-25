@@ -4,6 +4,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 import qutip as qt
 from scipy.optimize import differential_evolution
+import scipy as scp
+
+# sx = qt.sigmax()
+# sy = qt.sigmay()
+# sz = qt.sigmaz()
+static_pauli = {"x": qt.sigmax(),
+                "y": qt.sigmay(),
+                "z": qt.sigmaz()}
+
+δf = 1.8 * (10 ** (-6))
+EL = 1.3  # GHz
+φge = 1.996
+Af = 2 * np.pi * δf * EL * np.abs(φge)
+
+νfloquet = 0.3
+ωfloquet = 2 * np.pi * νfloquet
+T = 1 / νfloquet
+
+time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
+
+tlist = np.linspace(0, T, time_points)
+νlist = np.fft.rfftfreq(len(tlist), np.mean(np.diff(tlist)))
+
+νcut = νlist[-1]
+ωcut = 2 * np.pi * νcut
+
+dt = np.mean(np.diff(tlist))
 
 sx = qt.sigmax()
 sy = qt.sigmay()
