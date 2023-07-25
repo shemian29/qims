@@ -87,9 +87,9 @@ def su2_rotation_dot(φ: float, θ: float, β: float, φ_dot: float, θ_dot: flo
     # Checked sign changes in su2_rotation matrices from taking derivative of su2_rotation
 
     sm = 0
-    sm = sm + (-1j * φ_dot * sz / 2) * dmat(φ, θ, β)
-    sm = sm + (-1j * θ_dot * sy / 2) * dmat(-φ, θ, β)
-    sm = sm + (-1j * β_dot * sz / 2) * dmat(φ, -θ, β)
+    sm = sm + (-1j * φ_dot * static_pauli["z"] / 2) * su2_rotation(φ, θ, β)
+    sm = sm + (-1j * θ_dot * static_pauli["y"] / 2) * su2_rotation(-φ, θ, β)
+    sm = sm + (-1j * β_dot * static_pauli["z"] / 2) * su2_rotation(φ, -θ, β)
 
     return sm
 
@@ -110,10 +110,10 @@ def so3_rotation(φ: float, θ: float, β: float) -> qt.Qobj:
     su2_rot = su2_rotation(φ, θ, β)
 
     tmp = np.zeros((3, 3))
-    for a in range(3):
-        τa = Drot.dag() * s[a] * Drot
-        for b in range(3):
-            tmp[a, b] = 0.5 * (τa * s[b]).tr()
+    for a in ["x", "y", "z"]:
+        floquet_pauli_a = su2_rot.dag() * static_pauli[a] * su2_rot
+        for b in ["x", "y", "z"]:
+            tmp[a, b] = 0.5 * (floquet_pauli_a * static_pauli[b]).tr()
 
     return qt.Qobj(tmp)
 
@@ -271,7 +271,6 @@ def Sd(ω: float) -> float:
 
 
 def spectral_density(ω):
-    # return 1.0 * (w**2 - (1) ** 2) ** 2 + w
     return (Sf(ω) + Sd(ω))
 
 
