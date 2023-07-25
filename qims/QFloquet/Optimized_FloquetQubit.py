@@ -162,8 +162,17 @@ def su2_rotation_freq_to_time(angle_freq: complex) -> List[qt.Qobj]:
     return [su2_rotation(φ_t[it], θ_t[it], β_t[it]) for it in range(time_points)]
 
 
+def su2_rotation_freq_to_time_dot(angle_freq: complex) -> List[qt.Qobj]:
+    """
+    Create temporal list of time-derivative of SU(2) matrices that map static qubit states to Floquet qubit states in the time domain from its frequency components.
 
-def dmat_freq_to_time_dot(angle_freq):
+    :param angle_freq: frequency components of the three angles φ, θ, β
+
+    :return: list of 2x2 matrices with number of time points equal to time_points
+
+    Example:
+    >>> su2_rotation_freq_to_time_dot([1,2,3])
+    """
     angle_freq_tmp = np.array(angle_freq).reshape((3, int(len(angle_freq) / 3)))
 
     φ_t = angle_time(angle_freq_tmp[0])
@@ -174,7 +183,9 @@ def dmat_freq_to_time_dot(angle_freq):
     θ_tdot = angle_time_dot(angle_freq_tmp[1])
     β_tdot = angle_time_dot(angle_freq_tmp[2])
 
-    return [dmat_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in range(time_points)]
+    return [su2_rotation_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in
+            range(time_points)]
+
 
 
 def hamiltonian(ε01, dmat, dmat_dot):
