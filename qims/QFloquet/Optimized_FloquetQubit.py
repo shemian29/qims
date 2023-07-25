@@ -94,8 +94,21 @@ def su2_rotation_dot(φ: float, θ: float, β: float, φ_dot: float, θ_dot: flo
     return sm
 
 
-def rot_matrix(φ, θ, β):
-    Drot = dmat(φ, θ, β)
+def so3_rotation(φ: float, θ: float, β: float) -> qt.Qobj:
+    """Calculate the SO(3) orthogonal matrix associated with SU(2) matrix that maps static qubit states to Floquet qubit states
+
+    :param φ: azimuthal angle
+    :param θ: polar angle
+    :param β: angle of rotation about the z-axis
+
+    :return: 3x3 orthogonal matrix
+
+    Example:
+    >>> so3_rotation(0,0,0)
+
+    """
+    su2_rot = su2_rotation(φ, θ, β)
+
     tmp = np.zeros((3, 3))
     for a in range(3):
         τa = Drot.dag() * s[a] * Drot
