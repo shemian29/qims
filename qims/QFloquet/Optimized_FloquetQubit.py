@@ -320,34 +320,23 @@ def decoherence_rate(parameters: List[complex]) -> float:
     return 0.5 * (depolarization + excitation) + dephasing
 
 
-def cost_function(test_freqs):
-    h0match = 100 * h0_matching(test_freqs)
-    return (h0match + rate(test_freqs) / h0match)
-    # return (h0match + 0.001*rate(test_freqs))
-    # return h0match
-    # return rate(test_freqs)
+def cost_function(parameters: List[complex], hyper_parameter: float = 100, normalization: float = 1) -> float:
+    """
+    Calculate the cost function for the optimization algorithm.
 
+    :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
+    :param hyper_parameter: controls the relative weight of the decoherence rate and the static qubit Hamiltonian matching.
+    :param normalization: normalization factor for the cost function with respect to the static system.
 
-def cost_function_normalized(test_freqs):
-    h0match = 100 * h0_matching(test_freqs)
-    return (h0match + rate(test_freqs) / h0match) / cost0
-    # return (h0match + 0.001*rate(test_freqs))/cost0
-    # return h0match/cost0
-    # return rate(test_freqs)/cost0
+    :return: cost function value
 
+    Example:
+    >>> cost_function([1,2,3,4], hyper_parameter=100, normalization=1)
+    """
 
-def callbackF(xk, convergence=1):
-    global iteration, monitor, rate_rec, h0match_rec
+    decoh_rate = hyper_parameter*decoherence_rate(parameters)
 
-    monitor.append(xk)
-    rate_rec.append(rate(xk))
-    h0match_rec.append(h0_matching(xk))
-    np.savetxt('monitor_FQ.txt', monitor, delimiter=',')
-    np.savetxt('iteration_FQ.txt', [iteration])
-    np.savetxt('rate_rec_FQ.txt', rate_rec)
-    np.savetxt('h0match_rec_FQ.txt', h0match_rec)
-    print(iteration, xk)
-    print()
+    return (hstatic_matching(parameters)/decoh_rate + decoh_rate) / normalization
 
     iteration += 1
 
