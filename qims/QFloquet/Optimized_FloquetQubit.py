@@ -236,7 +236,13 @@ def delta(m, n):
 
 
 def Sf(ω):
-    """Spectral function. Frequency in GHz."""
+    """
+    Calculate the spectral density associated with flux noise.
+
+    :param ω: frequency in GHz
+    :return: spectral density value in kHz
+
+    """
     δf = 1.8 * (10 ** (-6))
     EL = 1.3  # GHz
     φge = 1.996
@@ -244,7 +250,14 @@ def Sf(ω):
     return (Af ** 2) * np.abs((2 * np.pi) / ω) * (10 ** 6) * (2 * np.pi)  # kHz
 
 
-def Sd(ω):
+def Sd(ω: float) -> float:
+    """
+    Calculate the spectral density associated with dielectric noise. Frequency in GHz.
+
+    :param ω: frequency in GHz
+    :return: spectral density value in kHz
+
+    """
     EC = 0.5  # GHz
     Temp = 15 * (10 ** (-3))  # Kelvin
     ħ = 1.05457182 * (10 ** (-34))  # Js
@@ -262,18 +275,28 @@ def spectral_density(ω):
     return (Sf(ω) + Sd(ω))
 
 
-def rate(test_freqs):
-    ε01 = test_freqs[0]
-    test_freqs = test_freqs[1:]
-    dmat_time = dmat_freq_to_time(test_freqs)
-    # dmat_timedot = dmat_freq_to_time_dot(test_freqs)
-    # h_time = hamiltonian(ε01, dmat_time)
-    gzx = np.fft.rfft([(dmat_time[it].dag() * s[0] * dmat_time[it] * s[2]).tr() for it in range(time_points)],
-                      norm='forward')
-    gzy = np.fft.rfft([(dmat_time[it].dag() * s[1] * dmat_time[it] * s[2]).tr() for it in range(time_points)],
-                      norm='forward')
-    gzz = np.fft.rfft([(dmat_time[it].dag() * s[2] * dmat_time[it] * s[2]).tr() for it in range(time_points)],
-                      norm='forward')
+def decoherence_rate(parameters: List[complex]) -> float:
+    """
+    Calculate the decoherence rate of a fluxonium Floquet qubit.
+    :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
+    :return: decoherence rate
+
+    Example:
+    >>> decoherence_rate([1,2,3,4])
+    """
+    ε01 = parameters[0]
+    angle_frequencies = parameters[1:]
+    su2_rot = su2_rotation_freq_to_time(angle_frequencies)
+
+    gzx = np.fft.rfft(
+        [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(time_points)],
+        norm='forward')
+    gzy = np.fft.rfft(
+        [(su2_rot[it].dag() * static_pauli["y"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(time_points)],
+        norm='forward')
+    gzz = np.fft.rfft(
+        [(su2_rot[it].dag() * static_pauli["z"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(time_points)],
+        norm='forward')
 
     gamma_0 = Af * 2 * (np.abs(gzz[0])) * 4 * (10 ** 6)
     mlist_aux = np.arange(1, len(gzz))
