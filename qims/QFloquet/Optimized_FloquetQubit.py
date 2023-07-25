@@ -204,36 +204,28 @@ def hamiltonian(ε01: float, su2_rotation: List[qt.Qobj], su2_rotation_dot: List
             for it in range(time_points)]
 
 
-# def hamiltonian_red(ε01, dmat, dmat_dot):
+def hstatic_matching(parameters: List[complex]) -> float:
+    """
+    Calculate the cost function for matching the static qubit Hamiltonian to the Floquet qubit Hamiltonian.
+    
+    :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β. 
+    :return: cost function value 
+    
+    Example:
+    >>> hstatic_matching([1,2,3,4])
+    
+    """
+    ε01 = parameters[0]
+    angle_frequencies = parameters[1:]
+    su2_rot = su2_rotation_freq_to_time(angle_frequencies)
+    su2_rot_dot = su2_rotation_freq_to_time_dot(angle_frequencies)
 
-#     ε01 = 2*(-1j*dmat_dot[it]*dmat[it].dag() )
+    hstatic = 0.5 * E01 * static_pauli['z']
 
-#     return [0.5*ε01*dmat[it]*sz*dmat[it].dag() + 1j*dmat_dot[it]*dmat[it].dag()
-#      for it in range(time_points)]
+    h_time = hamiltonian(ε01, su2_rot, su2_rot_dot)
+    h_time_average = (dt / T) * np.sum(np.array([h_time[it] for it in range(time_points)]), axis=0)
 
-
-def hamiltonian_rot(ε01, dmat):
-    return [0.5 * ε01 * dmat[it] * sz * dmat[it].dag() for it in range(time_points)]
-
-
-def h0_matching(test_freqs):
-    ε01 = test_freqs[0]
-    test_freqs = test_freqs[1:]
-    dmat_time = dmat_freq_to_time(test_freqs)
-    dmat_timedot = dmat_freq_to_time_dot(test_freqs)
-    # h_time = hamiltonian_rot(ε01, dmat_time)
-
-    # ε01 = 2*(-1j*dmat_timedot[it]*dmat_timedot[it].dag() )
-    h_time = hamiltonian(ε01, dmat_time, dmat_timedot)
-
-    return np.sum(np.abs(
-        0.5 * E01 * sz.full() - (dt / T) * np.sum(np.array([h_time[it].full() for it in range(time_points)]), axis=0)))
-
-
-δf = 1.8 * (10 ** (-6))
-EL = 1.3  # GHz
-φge = 1.996
-Af = 2 * np.pi * δf * EL * np.abs(φge)
+    return (hstatic - h_time_average).norm()
 
 
 def delta(m, n):
