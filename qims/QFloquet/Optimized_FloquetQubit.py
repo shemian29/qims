@@ -118,7 +118,15 @@ def so3_rotation(φ: float, θ: float, β: float) -> qt.Qobj:
     return qt.Qobj(tmp)
 
 
-def angle_time(angle_freq):
+def angle_time(angle_freq: complex) -> np.ndarray:
+    """Calculate the temporal components of an angle variable from its frequency components.
+
+    :param angle_freq: frequency components of the three angles φ, θ, β
+    :return: list of angles in the time domain with number of time points equal to time_points
+
+    Example:
+    >>> angle_time([1,2*1j,3])
+    """
     return np.fft.irfft(angle_freq, n=time_points, norm="forward")
 
 
