@@ -130,7 +130,17 @@ def angle_time(angle_freq: complex) -> np.ndarray:
     return np.fft.irfft(angle_freq, n=time_points, norm="forward")
 
 
-def angle_time_dot(angle_freq):
+def angle_time_dot(angle_freq: complex) -> np.ndarray:
+    """
+    Calculate the temporal components of the time derivative of an angle variable from its frequency components.
+
+    :param angle_freq: frequency components of the three angles φ, θ, β
+
+    :return: list of time derivatives of angle in the time domain with number of time points equal to time_points
+
+    Example:
+    >>> angle_time_dot([1,2,3])
+    """
     return np.fft.irfft((ωfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=time_points, norm="forward")
 
 
