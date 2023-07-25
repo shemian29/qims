@@ -187,9 +187,20 @@ def su2_rotation_freq_to_time_dot(angle_freq: complex) -> List[qt.Qobj]:
             range(time_points)]
 
 
+def hamiltonian(ε01: float, su2_rotation: List[qt.Qobj], su2_rotation_dot: List[qt.Qobj]) -> List[qt.Qobj]:
+    """
+    Calculate the time-dependent Hamiltonian of the Floquet qubit.
+    :param ε01: Floquet quasi-energy
+    :param su2_rotation: list of SU(2) rotations that map static qubit states to Floquet qubit states
+    :param su2_rotation_dot: list of time derivatives of SU(2) rotations that map static qubit states to Floquet qubit states
 
-def hamiltonian(ε01, dmat, dmat_dot):
-    return [0.5 * ε01 * dmat[it] * sz * dmat[it].dag() + 1j * dmat_dot[it] * dmat[it].dag()
+    :return: list of 2x2 Hamiltonian matrices with number of time points equal to time_points
+
+    Example:
+    >>> hamiltonian(1, [su2_rotation(0,0,0)], [su2_rotation_dot(0,0,0,0,0,0)])
+    """
+    return [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag() + 1j * su2_rotation_dot[it] *
+            su2_rotation[it].dag()
             for it in range(time_points)]
 
 
