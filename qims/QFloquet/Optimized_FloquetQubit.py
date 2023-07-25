@@ -37,13 +37,21 @@ E01 = 2 * np.pi * 0.3
 # cost_function([E01, 0, 0, 0]), cost_function_normalized([E01, 0, 0, 0])
 
 
-def dmat(φ: float, θ: float, β: float) -> ndarray:
-    """
+def su2_rotation(φ: float, θ: float, β: float) -> qt.Qobj:
+    """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
+
     :param φ: azimuthal angle
     :param θ: polar angle
     :param β: angle of rotation about the z-axis
-    :return: unitary matrix mapping from static to Floquet qubit states
+
+    :return: 2x2 unitary matrix
+
+    Example:
+    >>> su2_rotation(0,0,0)
+
     """
+    # Checked signs of angles in exponents
+
     # Rotation about z-axis by β
     exp_phi = np.exp(-1j * φ / 2)
     sm = qt.Qobj([[exp_phi, 0], [0, 1 / exp_phi]])
