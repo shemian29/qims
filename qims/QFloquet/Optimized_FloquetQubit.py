@@ -144,14 +144,23 @@ def angle_time_dot(angle_freq: complex) -> np.ndarray:
     return np.fft.irfft((ωfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=time_points, norm="forward")
 
 
-def dmat_freq_to_time(angle_freq):
+def su2_rotation_freq_to_time(angle_freq: complex) -> List[qt.Qobj]:
+    """
+    Create temporal list of SU(2) matrices that map static qubit states to Floquet qubit states in the time domain from its frequency components.
+    :param angle_freq: frequency components of the three angles φ, θ, β
+    :return: list of 2x2 matrices with number of time points equal to time_points
+
+    Example:
+    >>> su2_rotation_freq_to_time([1,2,3])
+    """
     angle_freq_tmp = np.array(angle_freq).reshape((3, int(len(angle_freq) / 3)))
 
     φ_t = angle_time(angle_freq_tmp[0])
     θ_t = angle_time(angle_freq_tmp[1])
     β_t = angle_time(angle_freq_tmp[2])
 
-    return [dmat(φ_t[it], θ_t[it], β_t[it]) for it in range(time_points)]
+    return [su2_rotation(φ_t[it], θ_t[it], β_t[it]) for it in range(time_points)]
+
 
 
 def dmat_freq_to_time_dot(angle_freq):
