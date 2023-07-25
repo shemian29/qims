@@ -68,8 +68,8 @@ def su2_rotation(φ: float, θ: float, β: float) -> qt.Qobj:
     return sm
 
 
-def dmat_dot(φ: object, θ: object, β: object, φ_dot: object, θ_dot: object, β_dot: object) -> object:
-    """
+def su2_rotation_dot(φ: float, θ: float, β: float, φ_dot: float, θ_dot: float, β_dot: float) -> qt.Qobj:
+    """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
 
     :param φ: azimuthal angle
     :param θ: polar angle
@@ -77,8 +77,15 @@ def dmat_dot(φ: object, θ: object, β: object, φ_dot: object, θ_dot: object,
     :param φ_dot: derivative of φ with respect to time
     :param θ_dot: derivative of θ with respect to time
     :param β_dot: derivative of β with respect to time
-    :return:
+
+    :return: time derivative of dmat
+
+    Example:
+    >>> su2_rotation_dot(0,0,0,0,0,0)
+
     """
+    # Checked sign changes in su2_rotation matrices from taking derivative of su2_rotation
+
     sm = 0
     sm = sm + (-1j * φ_dot * sz / 2) * dmat(φ, θ, β)
     sm = sm + (-1j * θ_dot * sy / 2) * dmat(-φ, θ, β)
