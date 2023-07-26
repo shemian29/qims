@@ -21,19 +21,19 @@ class FloquetQubit:
     def __init__(self, E01: float):
         self.E01 = E01
 
-        self.νfloquet = 0.3
-        self.ωfloquet = 2 * np.pi * self.νfloquet
-        self.T = 1 / self.νfloquet
+        # self.νfloquet = 0.3
+        # self.ωfloquet = 2 * np.pi * self.νfloquet
+        # self.T = 1 / self.νfloquet
 
         self.time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
 
-        self.tlist = np.linspace(0, self.T, self.time_points)
-        self.νlist = np.fft.rfftfreq(len(self.tlist), np.mean(np.diff(self.tlist)))
+        #
+        # self.νlist = np.fft.rfftfreq(len(self.tlist), np.mean(np.diff(self.tlist)))
 
-        self.νcut = self.νlist[-1]
-        self.ωcut = 2 * np.pi * self.νcut
+        # self.νcut = self.νlist[-1]
+        # self.ωcut = 2 * np.pi * self.νcut
 
-        self.dt = np.mean(np.diff(self.tlist))
+        # self.dt = np.mean(np.diff(self.tlist))
 
     def su2_rotation(self, φ: float, θ: float, β: float) -> qt.Qobj:
         """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
@@ -136,7 +136,7 @@ class FloquetQubit:
         Example:
         >>> angle_time_dot([1,2,3])
         """
-        return np.fft.irfft((self.ωfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
+        return np.fft.irfft((2*np.pi*self.νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
                             norm="forward")
 
     def su2_rotation_freq_to_time(self, angle_freq: complex) -> List[qt.Qobj]:
@@ -215,7 +215,7 @@ class FloquetQubit:
         hstatic = 0.5 * self.E01 * static_pauli['z']
 
         h_time = self.hamiltonian(ε01, su2_rot, su2_rot_dot)
-        h_time_average = (self.dt / self.T) * np.sum(np.array([h_time[it] for it in range(self.time_points)]), axis=0)
+        h_time_average = (1/self.time_points) * np.sum(np.array([h_time[it] for it in range(self.time_points)]), axis=0)
 
         return (hstatic - h_time_average).norm()
 
@@ -271,7 +271,8 @@ class FloquetQubit:
         >>> decoherence_rate([1,2,3,4])
         """
         ε01 = parameters[0]
-        angle_frequencies = parameters[1:]
+        self.νfloquet = parameters[1]
+        angle_frequencies = parameters[2:]
         su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
 
         gzx = np.fft.rfft(
@@ -330,6 +331,14 @@ class FloquetQubit:
         return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / normalization
 
     def record_differential_optimization_path(self, parameters, convergence=1):
+        """
+        Record the parameters, cost function, and h0 matching at each iteration of the differential evolution optimization algorithm.
+        :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
+        :param convergence: convergence parameter of the differential evolution optimization algorithm.
+
+        Example:
+        >>> record_differential_optimization_path([1,2,3,4], convergence=1)
+        """
         global iteration_step, parameters_differential_evolution, rate_record, h0match_rec
 
         parameters_differential_evolution.append(parameters)
@@ -375,6 +384,9 @@ class FloquetQubit:
         )
 
     def plot_data(self, solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, dmat_timedot):
+
+        self.tlist = np.linspace(0, 1 / self.νfloquet, self.time_points)
+
         ncols, nrows = 3, 5
         fig, axs = plt.subplots(nrows, ncols, figsize=(24, 10))
         freq_num = int(len(solx[1:]) / 3)
