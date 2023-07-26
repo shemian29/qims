@@ -6,7 +6,6 @@ import qutip as qt
 from scipy.optimize import differential_evolution
 import scipy as scp
 
-
 static_pauli = {"x": qt.sigmax(),
                 "y": qt.sigmay(),
                 "z": qt.sigmaz()}
@@ -15,6 +14,7 @@ static_pauli = {"x": qt.sigmax(),
 EL = 1.3  # GHz
 φge = 1.996
 Af = 2 * np.pi * δf * EL * np.abs(φge)
+
 
 class FloquetQubit:
 
@@ -65,7 +65,6 @@ class FloquetQubit:
 
         return sm
 
-
     def su2_rotation_dot(self, φ: float, θ: float, β: float, φ_dot: float, θ_dot: float, β_dot: float) -> qt.Qobj:
         """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
 
@@ -91,7 +90,6 @@ class FloquetQubit:
 
         return sm
 
-
     def so3_rotation(self, φ: float, θ: float, β: float) -> qt.Qobj:
         """Calculate the SO(3) orthogonal matrix associated with SU(2) matrix that maps static qubit states to Floquet qubit states
 
@@ -107,7 +105,7 @@ class FloquetQubit:
         """
         su2_rot = self.su2_rotation(φ, θ, β)
 
-        axis_map = {"x":0, "y":1, "z":2}
+        axis_map = {"x": 0, "y": 1, "z": 2}
         tmp = np.zeros((3, 3))
         for a in ["x", "y", "z"]:
             floquet_pauli_a = su2_rot.dag() * static_pauli[a] * su2_rot
@@ -115,7 +113,6 @@ class FloquetQubit:
                 tmp[axis_map[a], axis_map[b]] = 0.5 * (floquet_pauli_a * static_pauli[b]).tr()
 
         return qt.Qobj(tmp)
-
 
     def angle_time(self, angle_freq: List[complex]) -> np.ndarray:
         """Calculate the temporal components of an angle variable from its frequency components.
@@ -128,7 +125,6 @@ class FloquetQubit:
         """
         return np.fft.irfft(angle_freq, n=self.time_points, norm="forward")
 
-
     def angle_time_dot(self, angle_freq: complex) -> np.ndarray:
         """
         Calculate the temporal components of the time derivative of an angle variable from its frequency components.
@@ -140,8 +136,8 @@ class FloquetQubit:
         Example:
         >>> angle_time_dot([1,2,3])
         """
-        return np.fft.irfft((self.ωfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points, norm="forward")
-
+        return np.fft.irfft((self.ωfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
+                            norm="forward")
 
     def su2_rotation_freq_to_time(self, angle_freq: complex) -> List[qt.Qobj]:
         """
@@ -159,7 +155,6 @@ class FloquetQubit:
         β_t = self.angle_time(angle_freq_tmp[2])
 
         return [self.su2_rotation(φ_t[it], θ_t[it], β_t[it]) for it in range(self.time_points)]
-
 
     def su2_rotation_freq_to_time_dot(self, angle_freq: complex) -> List[qt.Qobj]:
         """
@@ -185,7 +180,6 @@ class FloquetQubit:
         return [self.su2_rotation_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in
                 range(self.time_points)]
 
-
     def hamiltonian(self, ε01: float, su2_rotation: List[qt.Qobj], su2_rotation_dot: List[qt.Qobj]) -> List[qt.Qobj]:
         """
         Calculate the time-dependent Hamiltonian of the Floquet qubit.
@@ -201,7 +195,6 @@ class FloquetQubit:
         return [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag() + 1j * su2_rotation_dot[it] *
                 su2_rotation[it].dag()
                 for it in range(self.time_points)]
-
 
     def hstatic_matching(self, parameters: List[complex]) -> float:
         """
@@ -226,13 +219,11 @@ class FloquetQubit:
 
         return (hstatic - h_time_average).norm()
 
-
     def delta(self, m, n):
         if m == n:
             return 1
         else:
             return 0
-
 
     def Sf(self, ω):
         """
@@ -247,7 +238,6 @@ class FloquetQubit:
         φge = 1.996
         Af = 2 * np.pi * δf * EL * np.abs(φge)
         return (Af ** 2) * np.abs((2 * np.pi) / ω) * (10 ** 6) * (2 * np.pi)  # kHz
-
 
     def Sd(self, ω: float) -> float:
         """
@@ -268,10 +258,8 @@ class FloquetQubit:
         Ad = (np.pi ** 2) * tanδc * (φge ** 2) / EC
         return α * Ad * ((ω / (2 * np.pi)) ** 2) * (10 ** 6) * (2 * np.pi)  # kHz
 
-
     def spectral_density(self, ω):
         return (self.Sf(ω) + self.Sd(ω))
-
 
     def decoherence_rate(self, parameters: List[complex]) -> float:
         """
@@ -287,36 +275,41 @@ class FloquetQubit:
         su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
 
         gzx = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(self.time_points)],
+            [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["z"]).tr() for it in
+             range(self.time_points)],
             norm='forward')
         gzy = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["y"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(self.time_points)],
+            [(su2_rot[it].dag() * static_pauli["y"] * su2_rot[it] * static_pauli["z"]).tr() for it in
+             range(self.time_points)],
             norm='forward')
         gzz = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["z"] * su2_rot[it] * static_pauli["z"]).tr() for it in range(self.time_points)],
+            [(su2_rot[it].dag() * static_pauli["z"] * su2_rot[it] * static_pauli["z"]).tr() for it in
+             range(self.time_points)],
             norm='forward')
 
         gamma_0 = Af * 2 * (np.abs(gzz[0])) * 4 * (10 ** 6)
         mlist_aux = np.arange(1, len(gzz))
 
         dephasing = gamma_0 + 2 * np.dot((np.abs(gzz[1:]) ** 2),
-                                         self.spectral_density(mlist_aux * self.νfloquet) + self.spectral_density(-mlist_aux * self.νfloquet))
+                                         self.spectral_density(mlist_aux * self.νfloquet) + self.spectral_density(
+                                             -mlist_aux * self.νfloquet))
 
         # mlist = np.arange(0,len(gzz))
         depolarization = np.dot(
             (np.abs(gzx - 1j * gzy) ** 2),
             np.concatenate(([self.spectral_density(0 * self.νfloquet + ε01)],
-                            self.spectral_density(mlist_aux * self.νfloquet + ε01) + self.spectral_density(-mlist_aux * self.νfloquet + ε01))),
+                            self.spectral_density(mlist_aux * self.νfloquet + ε01) + self.spectral_density(
+                                -mlist_aux * self.νfloquet + ε01))),
         )
 
         excitation = np.dot(
             (np.abs(gzx + 1j * gzy) ** 2),
             np.concatenate(([self.spectral_density(0 * self.νfloquet - ε01)],
-                            self.spectral_density(mlist_aux * self.νfloquet - ε01) + self.spectral_density(-mlist_aux * self.νfloquet - ε01))),
+                            self.spectral_density(mlist_aux * self.νfloquet - ε01) + self.spectral_density(
+                                -mlist_aux * self.νfloquet - ε01))),
         )
 
         return 0.5 * (depolarization + excitation) + dephasing
-
 
     def cost_function(self, parameters: List[complex], hyper_parameter: float = 100, normalization: float = 1) -> float:
         """
@@ -332,10 +325,9 @@ class FloquetQubit:
         >>> cost_function([1,2,3,4], hyper_parameter=100, normalization=1)
         """
 
-        decoh_rate = hyper_parameter*self.decoherence_rate(parameters)
+        decoh_rate = hyper_parameter * self.decoherence_rate(parameters)
 
-        return (self.hstatic_matching(parameters)/decoh_rate + decoh_rate) / normalization
-
+        return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / normalization
 
     def record_differential_optimization_path(self, parameters, convergence=1):
         global iteration_step, parameters_differential_evolution, rate_record, h0match_rec
@@ -350,7 +342,6 @@ class FloquetQubit:
 
         iteration_step += 1
 
-
     def search_floquet_qubit(self, number_frequencies: int = 2, maxiter: int = 10000000) -> scp.optimize.OptimizeResult:
         """
         Search for the optimal Floquet qubit parameters.
@@ -364,9 +355,9 @@ class FloquetQubit:
         >>> search_floquet_qubit(number_frequencies=2, maxiter=10000000)
         """
 
-        global parameters_differential_evolution, iteration, rate_record, h0match_rec
+        global parameters_differential_evolution, iteration, rate_record, h0match_rec, iteration_step
 
-        iteration = 1
+        iteration_step = 1
         parameters_differential_evolution = []
         rate_record = []
         h0match_rec = []
@@ -375,13 +366,13 @@ class FloquetQubit:
             [(-10.0, 10.0) for i in range(3 * number_frequencies + 1)],
             callback=self.record_differential_optimization_path,
             disp=True,
-            workers=-1, # Use all cores available
+            workers=-1,  # Use all cores available
             popsize=100,
-            init="halton", # Best initialization of parameters according to Scipy documentation
-            strategy="randtobest1bin", #This option appears to work well based on a few test cases # "currenttobest1bin", #"randtobest1bin",
+            init="halton",  # Best initialization of parameters according to Scipy documentation
+            strategy="randtobest1bin",
+            # This option appears to work well based on a few test cases # "currenttobest1bin", #"randtobest1bin",
             maxiter=maxiter,
         )
-
 
     def plot_data(self, solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, dmat_timedot):
         ncols, nrows = 3, 5
@@ -391,11 +382,14 @@ class FloquetQubit:
         rgb_colors = [(0.2, 0.4, 0.6), (0.8, 0.2, 0.4), (0.6, 0.4, 0.2)]
 
         axs[0][0].set_title('angle dynamics', fontsize=15)
-        axs[0][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1]) % (2 * np.pi)) / (2 * np.pi), '.', label='φ(t)')
-        axs[0][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num]) % (2 * np.pi)) / (2 * np.pi), '.',
+        axs[0][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1]) % (2 * np.pi)) / (2 * np.pi), '.',
+                       label='φ(t)')
+        axs[0][0].plot(self.tlist / self.T,
+                       (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num]) % (2 * np.pi)) / (2 * np.pi), '.',
                        label='θ(t)')
         axs[0][0].plot(self.tlist / self.T,
-                       (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num]) % (2 * np.pi)) / (2 * np.pi), '.',
+                       (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num]) % (2 * np.pi)) / (
+                                   2 * np.pi), '.',
                        label='β(t)')
         axs[0][0].set_xlim([0, 1])
         axs[0][0].set_ylim([0, 1])
@@ -404,13 +398,16 @@ class FloquetQubit:
 
         axs[1][0].set_title('periodic drives', fontsize=15)
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["x"]).tr()
-                                                 for it in range(self.time_points)]) / self.E01, '.-', label=r'$h_x(t)$',
+                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                       label=r'$h_x(t)$',
                        color=rgb_colors[0])
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["y"]).tr()
-                                                 for it in range(self.time_points)]) / self.E01, '.-', label=r'$h_y(t)$',
+                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                       label=r'$h_y(t)$',
                        color=rgb_colors[1])
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["z"]).tr()
-                                                 for it in range(self.time_points)]) / self.E01, '.-', label=r'$h_z(t)$',
+                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                       label=r'$h_z(t)$',
                        color=rgb_colors[2])
         axs[1][0].set_xlim([0, 1])
         axs[1][0].set_xlabel('time/T', fontsize=15)
@@ -437,7 +434,8 @@ class FloquetQubit:
         axs[3][1].set_xlabel('iteration', fontsize=15)
         axs[3][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
 
-        axs[4][1].imshow(np.abs(freq_data[:, 1 + 2 * freq_num:freq_num + 1 + 2 * freq_num].T), aspect='auto', cmap='plasma',
+        axs[4][1].imshow(np.abs(freq_data[:, 1 + 2 * freq_num:freq_num + 1 + 2 * freq_num].T), aspect='auto',
+                         cmap='plasma',
                          origin='lower')
         axs[4][1].set_title(r'$\vert\widetilde{β}(m)\vert$ for iteration = ' + str(iteration))
         axs[4][1].set_xlabel('iteration', fontsize=15)
@@ -449,8 +447,10 @@ class FloquetQubit:
 
         axs[2][0].set_title('angle dynamics', fontsize=15)
         axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1])) / (2 * np.pi), '.', label='φ(t)')
-        axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num])) / (2 * np.pi), '.', label='θ(t)')
-        axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num])) / (2 * np.pi), '.',
+        axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num])) / (2 * np.pi),
+                       '.', label='θ(t)')
+        axs[2][0].plot(self.tlist / self.T,
+                       (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num])) / (2 * np.pi), '.',
                        label='β(t)')
         axs[2][0].set_xlim([0, 1])
         # axs[2][0].set_ylim([0,1])
