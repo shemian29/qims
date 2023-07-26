@@ -15,7 +15,7 @@ EL = 1.3  # GHz
 φge = 1.996
 Af = 2 * np.pi * δf * EL * np.abs(φge)
 
-
+nu0 = 0.1 # GHz
 class FloquetQubit:
 
     def __init__(self, E01: float):
@@ -125,7 +125,7 @@ class FloquetQubit:
         """
         return np.fft.irfft(angle_freq, n=self.time_points, norm="forward")
 
-    def angle_time_dot(self, angle_freq: complex) -> np.ndarray:
+    def angle_time_dot(self, angle_freq: complex, νfloquet: float) -> np.ndarray:
         """
         Calculate the temporal components of the time derivative of an angle variable from its frequency components.
 
@@ -136,7 +136,7 @@ class FloquetQubit:
         Example:
         >>> angle_time_dot([1,2,3])
         """
-        return np.fft.irfft((2*np.pi*self.νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
+        return np.fft.irfft((2*np.pi*νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
                             norm="forward")
 
     def su2_rotation_freq_to_time(self, angle_freq: complex) -> List[qt.Qobj]:
@@ -156,7 +156,7 @@ class FloquetQubit:
 
         return [self.su2_rotation(φ_t[it], θ_t[it], β_t[it]) for it in range(self.time_points)]
 
-    def su2_rotation_freq_to_time_dot(self, angle_freq: complex) -> List[qt.Qobj]:
+    def su2_rotation_freq_to_time_dot(self, angle_freq: complex, νfloquet: float) -> List[qt.Qobj]:
         """
         Create temporal list of time-derivative of SU(2) matrices that map static qubit states to Floquet qubit states in the time domain from its frequency components.
 
@@ -173,9 +173,9 @@ class FloquetQubit:
         θ_t = self.angle_time(angle_freq_tmp[1])
         β_t = self.angle_time(angle_freq_tmp[2])
 
-        φ_tdot = self.angle_time_dot(angle_freq_tmp[0])
-        θ_tdot = self.angle_time_dot(angle_freq_tmp[1])
-        β_tdot = self.angle_time_dot(angle_freq_tmp[2])
+        φ_tdot = self.angle_time_dot(angle_freq_tmp[0], νfloquet)
+        θ_tdot = self.angle_time_dot(angle_freq_tmp[1], νfloquet)
+        β_tdot = self.angle_time_dot(angle_freq_tmp[2], νfloquet)
 
         return [self.su2_rotation_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in
                 range(self.time_points)]
@@ -196,6 +196,33 @@ class FloquetQubit:
                 su2_rotation[it].dag()
                 for it in range(self.time_points)]
 
+    # def ε01_constraint(self,  su2_rotation: List[qt.Qobj], su2_rotation_dot: List[qt.Qobj]) -> List[qt.Qobj]:
+    #     """
+    #     Calculate the time-dependent Hamiltonian of the Floquet qubit.
+    #     :param ε01: Floquet quasi-energy
+    #     :param su2_rotation: list of SU(2) rotations that map static qubit states to Floquet qubit states
+    #     :param su2_rotation_dot: list of time derivatives of SU(2) rotations that map static qubit states to Floquet qubit states
+    #
+    #     :return: list of 2x2 Hamiltonian matrices with number of time points equal to time_points
+    #
+    #     Example:
+    #     >>> hamiltonian(1, FQ.su2_rotation_freq_to_time([0.1,0.2,0.3]), FQ.su2_rotation_freq_to_time_dot([0.1,0.2,0.3]))
+    #     """
+    #
+    #
+    #     [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag() + 1j * su2_rotation_dot[it] *
+    #      su2_rotation[it].dag()
+    #      for it in range(self.time_points)]
+    #
+    #     term_1 = [0.5 * self.E01 * static_pauli['z'] - 1j * su2_rotation_dot[it] *
+    #      su2_rotation[it].dag()
+    #      for it in range(self.time_points)]
+    #
+    #     term_2 = [0.5 * self.E01 * static_pauli['z'] - 1j * su2_rotation_dot[it] *
+    #      su2_rotation[it].dag()
+    #      for it in range(self.time_points)]
+    #
+    #     return
     def hstatic_matching(self, parameters: List[complex]) -> float:
         """
         Calculate the cost function for matching the static qubit Hamiltonian to the Floquet qubit Hamiltonian.
@@ -207,10 +234,12 @@ class FloquetQubit:
         >>> hstatic_matching([1,2,3,4])
 
         """
+        number_freq = int(len(parameters[2:]) / 6)
         ε01 = parameters[0]
-        angle_frequencies = parameters[1:]
+        νfloquet = parameters[1]
+        angle_frequencies = parameters[2:3*number_freq+2]+1j*parameters[3*number_freq+2:6*number_freq + 2]
         su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
-        su2_rot_dot = self.su2_rotation_freq_to_time_dot(angle_frequencies)
+        su2_rot_dot = self.su2_rotation_freq_to_time_dot(angle_frequencies, νfloquet)
 
         hstatic = 0.5 * self.E01 * static_pauli['z']
 
@@ -270,9 +299,18 @@ class FloquetQubit:
         Example:
         >>> decoherence_rate([1,2,3,4])
         """
+        #
+        # parameters = np.array([parameters[0],  # quasi-energy
+        #                        parameters[1],  # νfloquet
+        #                        parameters[2],  # zero-frequency component, which is real
+        #                        tmp[0] + 1j * tmp[
+        #                            1]])  # non-zero complex frequency components of the three angles φ, θ, β
+
         ε01 = parameters[0]
-        self.νfloquet = parameters[1]
-        angle_frequencies = parameters[2:]
+        νfloquet = parameters[1]
+
+        angle_frequencies = parameters.reshape((2, int(parameters[3:].shape[0] / 2)))
+        angle_frequencies = np.concatenate([parameters[2],angle_frequencies[0]+1j*angle_frequencies[1]])
         su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
 
         gzx = np.fft.rfft(
@@ -292,22 +330,22 @@ class FloquetQubit:
         mlist_aux = np.arange(1, len(gzz))
 
         dephasing = gamma_0 + 2 * np.dot((np.abs(gzz[1:]) ** 2),
-                                         self.spectral_density(mlist_aux * self.νfloquet) + self.spectral_density(
-                                             -mlist_aux * self.νfloquet))
+                                         self.spectral_density(mlist_aux * νfloquet) + self.spectral_density(
+                                             -mlist_aux * νfloquet))
 
         # mlist = np.arange(0,len(gzz))
         depolarization = np.dot(
             (np.abs(gzx - 1j * gzy) ** 2),
-            np.concatenate(([self.spectral_density(0 * self.νfloquet + ε01)],
-                            self.spectral_density(mlist_aux * self.νfloquet + ε01) + self.spectral_density(
-                                -mlist_aux * self.νfloquet + ε01))),
+            np.concatenate(([self.spectral_density(0 * νfloquet + ε01)],
+                            self.spectral_density(mlist_aux * νfloquet + ε01) + self.spectral_density(
+                                -mlist_aux * νfloquet + ε01))),
         )
 
         excitation = np.dot(
             (np.abs(gzx + 1j * gzy) ** 2),
-            np.concatenate(([self.spectral_density(0 * self.νfloquet - ε01)],
-                            self.spectral_density(mlist_aux * self.νfloquet - ε01) + self.spectral_density(
-                                -mlist_aux * self.νfloquet - ε01))),
+            np.concatenate(([self.spectral_density(0 * νfloquet - ε01)],
+                            self.spectral_density(mlist_aux * νfloquet - ε01) + self.spectral_density(
+                                -mlist_aux * νfloquet - ε01))),
         )
 
         return 0.5 * (depolarization + excitation) + dephasing
@@ -326,6 +364,11 @@ class FloquetQubit:
         >>> cost_function([1,2,3,4], hyper_parameter=100, normalization=1)
         """
 
+        tmp = parameters.reshape((2, int(parameters[5:].shape[0] / 2)))
+        parameters = np.array([parameters[0],# quasi-energy
+                               parameters[1],# νfloquet
+                               parameters[2:5],# zero-frequency component, which is real, for all angles φ, θ, β
+                               tmp[0]+1j*tmp[1]]) # non-zero complex frequency components of the three angles φ, θ, β
         decoh_rate = hyper_parameter * self.decoherence_rate(parameters)
 
         return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / normalization
@@ -364,7 +407,7 @@ class FloquetQubit:
         >>> search_floquet_qubit(number_frequencies=2, maxiter=10000000)
         """
 
-        global parameters_differential_evolution, iteration, rate_record, h0match_rec, iteration_step
+        global parameters_differential_evolution, iteration_step, rate_record, h0match_rec
 
         iteration_step = 1
         parameters_differential_evolution = []
@@ -372,7 +415,8 @@ class FloquetQubit:
         h0match_rec = []
         return differential_evolution(
             self.cost_function,
-            [(-10.0, 10.0) for i in range(3 * number_frequencies + 1)],
+            [(0, 10*np.max([self.E01,nu0])), (0.1*np.min([self.E01,nu0]),10*np.max([self.E01,nu0]))]
+            + [(-1.0, 1.0) for _ in range(3 * 2 * number_frequencies-3)],
             callback=self.record_differential_optimization_path,
             disp=True,
             workers=-1,  # Use all cores available
