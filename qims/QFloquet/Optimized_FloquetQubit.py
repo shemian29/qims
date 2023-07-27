@@ -57,7 +57,6 @@ class FloquetQubit:
 
         return string
 
-
     def su2_rotation(self, φ: float, θ: float, β: float) -> qt.Qobj:
         """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
 
@@ -219,33 +218,6 @@ class FloquetQubit:
                 su2_rotation[it].dag()
                 for it in range(self.time_points)]
 
-    # def ε01_constraint(self,  su2_rotation: List[qt.Qobj], su2_rotation_dot: List[qt.Qobj]) -> List[qt.Qobj]:
-    #     """
-    #     Calculate the time-dependent Hamiltonian of the Floquet qubit.
-    #     :param ε01: Floquet quasi-energy
-    #     :param su2_rotation: list of SU(2) rotations that map static qubit states to Floquet qubit states
-    #     :param su2_rotation_dot: list of time derivatives of SU(2) rotations that map static qubit states to Floquet qubit states
-    #
-    #     :return: list of 2x2 Hamiltonian matrices with number of time points equal to time_points
-    #
-    #     Example:
-    #     >>> hamiltonian(1, FQ.su2_rotation_freq_to_time([0.1,0.2,0.3]), FQ.su2_rotation_freq_to_time_dot([0.1,0.2,0.3]))
-    #     """
-    #
-    #
-    #     [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag() + 1j * su2_rotation_dot[it] *
-    #      su2_rotation[it].dag()
-    #      for it in range(self.time_points)]
-    #
-    #     term_1 = [0.5 * self.E01 * static_pauli['z'] - 1j * su2_rotation_dot[it] *
-    #      su2_rotation[it].dag()
-    #      for it in range(self.time_points)]
-    #
-    #     term_2 = [0.5 * self.E01 * static_pauli['z'] - 1j * su2_rotation_dot[it] *
-    #      su2_rotation[it].dag()
-    #      for it in range(self.time_points)]
-    #
-    #     return
     def hstatic_matching(self, parameters: List[complex]) -> float:
         """
         Calculate the cost function for matching the static qubit Hamiltonian to the Floquet qubit Hamiltonian.
