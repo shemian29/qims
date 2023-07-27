@@ -246,12 +246,13 @@ class FloquetQubit:
         >>> hstatic_matching([1,2,3,4])
 
         """
-        number_freq = int(len(parameters[2:]) / 6)
+
         ε01 = parameters[0]
         νfloquet = parameters[1]
-        angle_frequencies = parameters[2:3*number_freq+2]+1j*parameters[3*number_freq+2:6*number_freq + 2]
-        su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
-        su2_rot_dot = self.su2_rotation_freq_to_time_dot(angle_frequencies, νfloquet)
+        frequency_components = parameters[2:]
+
+        su2_rot = self.su2_rotation_freq_to_time(frequency_components)
+        su2_rot_dot = self.su2_rotation_freq_to_time_dot(frequency_components, νfloquet)
 
         hstatic = 0.5 * self.E01 * static_pauli['z']
 
@@ -320,10 +321,9 @@ class FloquetQubit:
 
         ε01 = parameters[0]
         νfloquet = parameters[1]
+        frequency_components = parameters[2:]
 
-        angle_frequencies = parameters.reshape((2, int(parameters[3:].shape[0] / 2)))
-        angle_frequencies = np.concatenate([parameters[2],angle_frequencies[0]+1j*angle_frequencies[1]])
-        su2_rot = self.su2_rotation_freq_to_time(angle_frequencies)
+        su2_rot = self.su2_rotation_freq_to_time(frequency_components)
 
         gzx = np.fft.rfft(
             [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["z"]).tr() for it in
@@ -375,12 +375,23 @@ class FloquetQubit:
         Example:
         >>> cost_function([1,2,3,4], hyper_parameter=100, normalization=1)
         """
+        #
+        # tmp = parameters.reshape((2, int(parameters[5:].shape[0] / 2)))
+        # parameters = np.array([parameters[0],# quasi-energy
+        #                        parameters[1],# νfloquet
+        #                        parameters[2:5],# zero-frequency component, which is real, for all angles φ, θ, β
+        #                        tmp[0]+1j*tmp[1]]) # non-zero complex frequency components of the three angles φ, θ, β
+        ε01 = parameters[0]
+        νfloquet = parameters[1]
 
-        tmp = parameters.reshape((2, int(parameters[5:].shape[0] / 2)))
-        parameters = np.array([parameters[0],# quasi-energy
-                               parameters[1],# νfloquet
-                               parameters[2:5],# zero-frequency component, which is real, for all angles φ, θ, β
-                               tmp[0]+1j*tmp[1]]) # non-zero complex frequency components of the three angles φ, θ, β
+        number_freq = int((int(len(parameters[2:]) / 3)+1)/2)
+        frequency_components = parameters[2:].reshape((3, 2 * number_freq - 1))
+        frequency_components = np.insert(
+            frequency_components[:, 1:2 * num_freqs - 1:2] + 1j * frequency_components[:, 2:2 * num_freqs - 1:2], 0,
+            frequency_components[:, 0], axis=1)
+
+        parameters = np.concatenate(([ε01], [νfloquet], frequency_components.flatten()))
+
         decoh_rate = hyper_parameter * self.decoherence_rate(parameters)
 
         return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / normalization
