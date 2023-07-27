@@ -369,20 +369,26 @@ class FloquetQubit:
         #                        parameters[1],# νfloquet
         #                        parameters[2:5],# zero-frequency component, which is real, for all angles φ, θ, β
         #                        tmp[0]+1j*tmp[1]]) # non-zero complex frequency components of the three angles φ, θ, β
-        ε01 = parameters[0]
-        νfloquet = parameters[1]
+        parameters_extended = np.array(parameters_extended)
+        ε01 = parameters_extended[0]
+        νfloquet = parameters_extended[1]
 
-        number_freq = int((int(len(parameters[2:]) / 3)+1)/2)
-        frequency_components = parameters[2:].reshape((3, 2 * number_freq - 1))
+        num_freqs = int((int(len(parameters_extended[2:]) / 3) + 1) / 2)
+        frequency_components = parameters_extended[2:].reshape((3, 2 * num_freqs - 1))
         frequency_components = np.insert(
             frequency_components[:, 1:2 * num_freqs - 1:2] + 1j * frequency_components[:, 2:2 * num_freqs - 1:2], 0,
             frequency_components[:, 0], axis=1)
 
+        #Create parameters list with complex frequency components
         parameters = np.concatenate(([ε01], [νfloquet], frequency_components.flatten()))
-
+        # print('3')
         decoh_rate = hyper_parameter * self.decoherence_rate(parameters)
-
-        return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / normalization
+        # print(decoh_rate)
+        # print('4')
+        if normalize:
+            return (self.hstatic_matching(parameters) / decoh_rate + decoh_rate) / self.cost0
+        else:
+            return self.hstatic_matching(parameters) / decoh_rate + decoh_rate
 
     def record_differential_optimization_path(self, parameters, convergence=1):
         """
