@@ -237,12 +237,12 @@ class FloquetQubit:
         su2_rot = self.su2_rotation_freq_to_time(frequency_components)
         su2_rot_dot = self.su2_rotation_freq_to_time_dot(frequency_components, νfloquet)
 
-        hstatic = 0.5 * self.E01 * static_pauli['z']
+        #hstatic = 0.5 * self.E01 * static_pauli['z']
 
         h_time = self.hamiltonian(ε01, su2_rot, su2_rot_dot)
         h_time_average = (1/self.time_points) * np.sum(np.array([h_time[it] for it in range(self.time_points)]), axis=0)
 
-        return (hstatic - h_time_average).norm()
+        return (self.h_static - h_time_average).norm()#, hstatic, h_time_average, h_time,su2_rot, su2_rot_dot,frequency_components
 
     def delta(self, m, n):
         if m == n:
@@ -308,40 +308,45 @@ class FloquetQubit:
 
         su2_rot = self.su2_rotation_freq_to_time(frequency_components)
 
+        gxx = np.fft.rfft(
+            [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["x"]).tr() for it in
+             range(self.time_points)],
+            norm='forward')
+
+        gyx = np.fft.rfft(
+            [(su2_rot[it].dag() * static_pauli["y"] * su2_rot[it] * static_pauli["x"]).tr() for it in
+             range(self.time_points)],
+            norm='forward')
         gzx = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["x"] * su2_rot[it] * static_pauli["z"]).tr() for it in
-             range(self.time_points)],
-            norm='forward')
-        gzy = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["y"] * su2_rot[it] * static_pauli["z"]).tr() for it in
-             range(self.time_points)],
-            norm='forward')
-        gzz = np.fft.rfft(
-            [(su2_rot[it].dag() * static_pauli["z"] * su2_rot[it] * static_pauli["z"]).tr() for it in
+            [(su2_rot[it].dag() * static_pauli["z"] * su2_rot[it] * static_pauli["x"]).tr() for it in
              range(self.time_points)],
             norm='forward')
 
-        gamma_0 = Af * 2 * (np.abs(gzz[0])) * 4 * (10 ** 6)
-        mlist_aux = np.arange(1, len(gzz))
-
-        dephasing = gamma_0 + 2 * np.dot((np.abs(gzz[1:]) ** 2),
+        gamma_0 = Af * 2 * (np.abs(gzx[0])) * 4 * (10 ** 6)
+        mlist_aux = np.arange(1, len(gzx))
+        # print('5')
+        dephasing = gamma_0 + 2 * np.dot((np.abs(gzx[1:]) ** 2),
                                          self.spectral_density(mlist_aux * νfloquet) + self.spectral_density(
                                              -mlist_aux * νfloquet))
-
+        # print('test')
         # mlist = np.arange(0,len(gzz))
         depolarization = np.dot(
-            (np.abs(gzx - 1j * gzy) ** 2),
+            (np.abs(gxx - 1j * gyx) ** 2),
             np.concatenate(([self.spectral_density(0 * νfloquet + ε01)],
                             self.spectral_density(mlist_aux * νfloquet + ε01) + self.spectral_density(
                                 -mlist_aux * νfloquet + ε01))),
         )
-
+        # print('6')
         excitation = np.dot(
-            (np.abs(gzx + 1j * gzy) ** 2),
+            (np.abs(gxx + 1j * gyx) ** 2),
             np.concatenate(([self.spectral_density(0 * νfloquet - ε01)],
                             self.spectral_density(mlist_aux * νfloquet - ε01) + self.spectral_density(
                                 -mlist_aux * νfloquet - ε01))),
         )
+        # print('7')
+        # print(dephasing, depolarization, excitation)
+        # print(su2_rot[0], su2_rot[1])
+        return 0.5 * (depolarization + excitation) + dephasing #, dephasing, depolarization, excitation,gzx,gzy,gzz
 
         return 0.5 * (depolarization + excitation) + dephasing
 
