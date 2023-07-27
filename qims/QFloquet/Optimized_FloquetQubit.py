@@ -35,6 +35,18 @@ class FloquetQubit:
 
         # self.dt = np.mean(np.diff(self.tlist))
 
+    def _repr_latex_(self):
+
+        # string = r'$\\ \begin{pmatrix} e^\cos \theta(t)  \\a   \end{pmatrix} $'
+        string = "Floquet qubit of the form: "
+        string = (
+                string
+                + r"$\vert v_{\pm}(t)\rangle = e^{i \beta_{\pm}(t)}\left( \begin{array}{c} \pm e^{-i \varphi(t)/2} \cos\left(\frac{\theta(t)}{2}\right)  \\ e^{i \varphi(t)/2}\sin\left(\frac{\theta(t)}{2}\right)  \end{array} \right).   $   "
+        )
+
+        return string
+
+
     def su2_rotation(self, φ: float, θ: float, β: float) -> qt.Qobj:
         """Calculate the unitary matrix that maps static qubit states to Floquet qubit states
 
