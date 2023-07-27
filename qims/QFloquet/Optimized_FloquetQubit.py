@@ -277,7 +277,8 @@ class FloquetQubit:
         ħ = 1.05457182 * (10 ** (-34))  # Js
         kB = 1.380649 * (10 ** (-23))  # J/K
         λ = (2 * np.pi * ħ / kB) * (10 ** 9)  # K/GHz
-        α = np.abs(np.cosh(λ * ω / (2 * Temp)) / np.sinh(λ * ω / (2 * Temp)) + 1) / 2
+        # α = np.abs(np.cosh(λ * ω / (2 * Temp)) / np.sinh(λ * ω / (2 * Temp)) + 1) / 2
+        α = np.abs(1 / np.tanh(λ * ω / (2 * Temp)) + 1) / 2
         φge = 1.996
         tanδc = 1.1 * (10 ** (-6))
         Ad = (np.pi ** 2) * tanδc * (φge ** 2) / EC
