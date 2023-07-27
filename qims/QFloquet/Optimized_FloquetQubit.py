@@ -349,20 +349,18 @@ class FloquetQubit:
         # print(su2_rot[0], su2_rot[1])
         return 0.5 * (depolarization + excitation) + dephasing #, dephasing, depolarization, excitation,gzx,gzy,gzz
 
-        return 0.5 * (depolarization + excitation) + dephasing
-
-    def cost_function(self, parameters: List[complex], hyper_parameter: float = 100, normalization: float = 1) -> float:
+    def cost_function(self, parameters_extended: np.ndarray, hyper_parameter: float = 100, normalize= True) -> float:
         """
         Calculate the cost function for the optimization algorithm.
 
-        :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
+        :param parameters_extended: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
         :param hyper_parameter: controls the relative weight of the decoherence rate and the static qubit Hamiltonian matching.
         :param normalization: normalization factor for the cost function with respect to the static system.
 
         :return: cost function value
 
         Example:
-        >>> cost_function([1,2,3,4], hyper_parameter=100, normalization=1)
+        >>> cost_function([1,2,3,4], hyper_parameter=100, normalize=True)
         """
         #
         # tmp = parameters.reshape((2, int(parameters[5:].shape[0] / 2)))
@@ -431,10 +429,10 @@ class FloquetQubit:
         parameters_differential_evolution = []
         rate_record = []
         h0match_rec = []
-        return differential_evolution(
+        self.optimal_qubit = differential_evolution(
             self.cost_function,
-            [(0, 10*np.max([self.E01,nu0])), (0.1*np.min([self.E01,nu0]),10*np.max([self.E01,nu0]))]
-            + [(-1.0, 1.0) for _ in range(3 * 2 * number_frequencies-3)],
+            [(0, 10 * np.max([self.E01, nu0])), (0.1 * np.min([self.E01, nu0]), 10 * np.max([self.E01, nu0]))]
+            + [(-1.0, 1.0) for _ in range(3 * 2 * number_frequencies - 3)],
             callback=self.record_differential_optimization_path,
             disp=True,
             workers=-1,  # Use all cores available
