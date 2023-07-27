@@ -18,15 +18,26 @@ Af = 2 * np.pi * δf * EL * np.abs(φge)
 nu0 = 0.1 # GHz
 class FloquetQubit:
 
-    def __init__(self, E01: float):
-        self.E01 = E01
+    def __init__(self, ν01_0: float, φ_0: float = 0, θ_0: float = 0, β_0: float = 0):
+        # self.E01 = np.linalg.norm(h_static_vec)
 
         # self.νfloquet = 0.3
         # self.ωfloquet = 2 * np.pi * self.νfloquet
         # self.T = 1 / self.νfloquet
-
+        self.E01 = ν01_0
+        self.h_static = 0.5*ν01_0*(np.cos(φ_0)*np.sin(θ_0)*static_pauli["x"] +
+                                   np.sin(φ_0)*np.sin(θ_0)*static_pauli["y"] +
+                                   np.cos(θ_0)*static_pauli["z"])
         self.time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
+        # print('1')
 
+        try:
+            self.cost0 = self.cost_function([self.E01, 0.9*self.E01 , φ_0, θ_0, β_0], normalize=False)
+        except:
+            print('Issue encountered in cost0')
+
+        # print('2')
+        self.optimal_qubit = None
         #
         # self.νlist = np.fft.rfftfreq(len(self.tlist), np.mean(np.diff(self.tlist)))
 
