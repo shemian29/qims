@@ -18,33 +18,31 @@ Af = 2 * np.pi * δf * EL * np.abs(φge)
 nu0 = 0.1 # GHz
 class FloquetQubit:
 
-    def __init__(self, ν01_0: float, φ_0: float = 0, θ_0: float = 0, β_0: float = 0):
-        # self.E01 = np.linalg.norm(h_static_vec)
+    # def __init__(self, ν01_0: float, φ_0: float = 0, θ_0: float = 0, β_0: float = 0):
+    def __init__(self, system):
 
-        # self.νfloquet = 0.3
-        # self.ωfloquet = 2 * np.pi * self.νfloquet
-        # self.T = 1 / self.νfloquet
-        self.E01 = ν01_0
-        self.h_static = 0.5*ν01_0*(np.cos(φ_0)*np.sin(θ_0)*static_pauli["x"] +
-                                   np.sin(φ_0)*np.sin(θ_0)*static_pauli["y"] +
-                                   np.cos(θ_0)*static_pauli["z"])
         self.time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
-        # print('1')
 
-        try:
-            self.cost0 = self.cost_function([self.E01, 0.9*self.E01 , φ_0, θ_0, β_0], normalize=False)
-        except:
-            print('Issue encountered in cost0')
+        self.φ_0 = system["static"]["φ_0"]
+        self.θ_0 = system["static"]["θ_0"]
+        self.β_0 = system["static"]["β_0"]
+        self.ν01 = system["static"]["ν01"]
+        self.h_qubit = 0.5*self.ν01*(np.cos(self.φ_0)*np.sin(self.θ_0)*static_pauli["x"] +
+                                     np.sin(self.φ_0)*np.sin(self.θ_0)*static_pauli["y"] +
+                                     np.cos(self.θ_0)*static_pauli["z"])
 
-        # print('2')
+        ε01 = system["dynamic"]["ε01"]
+        νfloquet = system["dynamic"]["νfloquet"]
+        frequency_components = system["dynamic"]["φ"] + system["dynamic"]["θ"] + system["dynamic"]["β"]
+
+        self.su2_rot = self.su2_rotation_freq_to_time(frequency_components)
+        self.su2_rot_dot = self.su2_rotation_freq_to_time_dot(frequency_components, νfloquet)
+
+        self.h_time = self.hamiltonian(ε01, self.su2_rot, self.su2_rot_dot)
+
+
         self.optimal_qubit = None
-        #
-        # self.νlist = np.fft.rfftfreq(len(self.tlist), np.mean(np.diff(self.tlist)))
 
-        # self.νcut = self.νlist[-1]
-        # self.ωcut = 2 * np.pi * self.νcut
-
-        # self.dt = np.mean(np.diff(self.tlist))
 
     def _repr_latex_(self):
 
@@ -237,12 +235,12 @@ class FloquetQubit:
         su2_rot = self.su2_rotation_freq_to_time(frequency_components)
         su2_rot_dot = self.su2_rotation_freq_to_time_dot(frequency_components, νfloquet)
 
-        #hstatic = 0.5 * self.E01 * static_pauli['z']
+        #hstatic = 0.5 * self.ν01 * static_pauli['z']
 
         h_time = self.hamiltonian(ε01, su2_rot, su2_rot_dot)
         h_time_average = (1/self.time_points) * np.sum(np.array([h_time[it] for it in range(self.time_points)]), axis=0)
 
-        return (self.h_static - h_time_average).norm()#, hstatic, h_time_average, h_time,su2_rot, su2_rot_dot,frequency_components
+        return (self.h_qubit - h_time_average).norm()#, hstatic, h_time_average, h_time,su2_rot, su2_rot_dot,frequency_components
 
     def delta(self, m, n):
         if m == n:
@@ -425,13 +423,19 @@ class FloquetQubit:
 
         global parameters_differential_evolution, iteration_step, rate_record, h0match_rec
 
+        try:
+            self.cost0 = self.cost_function([self.ν01, 0.9*self.ν01 , self.φ_0, self.θ_0, self.β_0], normalize=False)
+        except:
+            print('Issue encountered calculating the cost function for the static system')
+
+
         iteration_step = 1
         parameters_differential_evolution = []
         rate_record = []
         h0match_rec = []
         self.optimal_qubit = differential_evolution(
             self.cost_function,
-            [(0, 10 * np.max([self.E01, nu0])), (0.1 * np.min([self.E01, nu0]), 10 * np.max([self.E01, nu0]))]
+            [(0, 10 * np.max([self.ν01, nu0])), (0.1 * np.min([self.ν01, nu0]), 10 * np.max([self.ν01, nu0]))]
             + [(-1.0, 1.0) for _ in range(3 * 2 * number_frequencies - 3)],
             callback=self.record_differential_optimization_path,
             disp=True,
@@ -470,15 +474,15 @@ class FloquetQubit:
 
         axs[1][0].set_title('periodic drives', fontsize=15)
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["x"]).tr()
-                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                                                           for it in range(self.time_points)]) / self.ν01, '.-',
                        label=r'$h_x(t)$',
                        color=rgb_colors[0])
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["y"]).tr()
-                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                                                           for it in range(self.time_points)]) / self.ν01, '.-',
                        label=r'$h_y(t)$',
                        color=rgb_colors[1])
         axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["z"]).tr()
-                                                           for it in range(self.time_points)]) / self.E01, '.-',
+                                                           for it in range(self.time_points)]) / self.ν01, '.-',
                        label=r'$h_z(t)$',
                        color=rgb_colors[2])
         axs[1][0].set_xlim([0, 1])
@@ -486,14 +490,14 @@ class FloquetQubit:
         axs[1][0].set_ylabel(r'$h_a(t)/E_{01}$', fontsize=15)
         axs[1][0].legend()
 
-        axs[0][1].plot(rate_data / self.decoherence_rate([self.E01, 0, 0, 0]), '.-');
+        axs[0][1].plot(rate_data / self.decoherence_rate([self.ν01, 0, 0, 0]), '.-');
         axs[0][1].set_title('iteration = ' + str(iteration))
         axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma^{(0)}_2$', fontsize=15)
 
-        axs[1][1].plot(np.loadtxt('h0match_rec_FQ.txt', delimiter=',') / self.E01, '.-');
+        axs[1][1].plot(np.loadtxt('h0match_rec_FQ.txt', delimiter=',') / self.ν01, '.-');
         axs[1][1].set_title('iteration = ' + str(iteration))
         axs[1][1].set_xlabel('iteration', fontsize=15)
-        axs[1][1].set_ylabel(r'(h0 matching)$/E01$', fontsize=15)
+        axs[1][1].set_ylabel(r'(h0 matching)$/ν01', fontsize=15)
 
         axs[2][1].imshow(np.abs(freq_data[:, 1:freq_num + 1].T), aspect='auto', cmap='plasma', origin='lower')
         axs[2][1].set_title(r'$\vert\widetilde{φ}(m)\vert$ for iteration = ' + str(iteration))
