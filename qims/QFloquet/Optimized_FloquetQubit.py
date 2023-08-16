@@ -70,7 +70,7 @@ class FloquetQubit:
         global parameters_differential_evolution, iteration_step, rate_record, h0match_rec
 
         try:
-            self.cost0 = self.cost_function([self.ν01, 0.5*self.ν01 , self.φ_0, self.θ_0, self.β_0], normalize=False) #The choice of Floquet frequency is arbitrary since it does not affect the static system
+            self.cost0 = self.cost_function([self.ν01, 12.3*self.ν01 , self.φ_0, self.θ_0, self.β_0], normalize=False) #The choice of Floquet frequency is arbitrary since it does not affect the static system
         except:
             print('Issue encountered calculating the cost function for the static system')
 
