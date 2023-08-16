@@ -448,7 +448,13 @@ class FloquetQubit:
             maxiter=maxiter,
         )
 
-    def plot_data(self, solx, h_time, iteration, rate_data, freq_data, ε01s, dmat_time, dmat_timedot):
+        def complexify(self, parameters_extended):
+            num_freqs = int((int(len(parameters_extended[2:]) / 3) + 1) / 2)
+            frequency_components = parameters_extended[2:].reshape((3, 2 * num_freqs - 1))
+            frequency_components = np.insert(
+                frequency_components[:, 1:2 * num_freqs - 1:2] + 1j * frequency_components[:, 2:2 * num_freqs - 1:2], 0,
+                frequency_components[:, 0], axis=1)
+            return frequency_components
 
         self.tlist = np.linspace(0, 1 / self.νfloquet, self.time_points)
 
