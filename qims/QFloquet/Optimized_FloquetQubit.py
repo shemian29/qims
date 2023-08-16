@@ -12,7 +12,7 @@ static_pauli = {"x": qt.sigmax(),
 
 δf = 1.8 * (10 ** (-6))
 EL = 1.3  # GHz
-φge = 1.996
+φge = 1.996 #fluxonium matrix element with respect to 0.5*phi0 flux value
 Af = 2 * np.pi * δf * EL * np.abs(φge)
 
 nu0 = 0.1 # GHz
