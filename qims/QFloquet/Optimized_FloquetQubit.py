@@ -213,7 +213,7 @@ class FloquetQubit:
         h_time = self.hamiltonian(ε01, su2_rot, su2_rot_dot)
         h_time_average = (1/self.time_points) * np.sum(np.array([h_time[it] for it in range(self.time_points)]), axis=0)
 
-        return (self.h_qubit - h_time_average).norm()
+        return (self.h_qubit - h_time_average).norm() + np.sum(np.abs([(static_pauli['z']*h_time[it]).tr() for it in range(self.time_points)]))*(1/self.time_points) + np.sum(np.abs([(static_pauli['y']*h_time[it]).tr() for it in range(self.time_points)]))*(1/self.time_points)
 
 
     def hamiltonian(self, ε01: float, su2_rotation: List[qt.Qobj], su2_rotation_dot: List[qt.Qobj]) -> List[qt.Qobj]:
