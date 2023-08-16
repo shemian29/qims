@@ -456,93 +456,97 @@ class FloquetQubit:
                 frequency_components[:, 0], axis=1)
             return frequency_components
 
-        self.tlist = np.linspace(0, 1 / self.νfloquet, self.time_points)
+        def plot_data(self, frequency_components, νfloquet, ε01s, h_time, rate_data, h0match_data, full_data,
+                      num_freqs):
 
-        ncols, nrows = 3, 5
-        fig, axs = plt.subplots(nrows, ncols, figsize=(24, 10))
-        freq_num = int(len(solx[1:]) / 3)
+            self.tlist = np.linspace(0, 1 / νfloquet, self.time_points)
 
-        rgb_colors = [(0.2, 0.4, 0.6), (0.8, 0.2, 0.4), (0.6, 0.4, 0.2)]
+            ncols, nrows = 3, 5
+            fig, axs = plt.subplots(nrows, ncols, figsize=(24, 10))
+            # freq_num = int(len(solx[1:]) / 3)
 
-        axs[0][0].set_title('angle dynamics', fontsize=15)
-        axs[0][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1]) % (2 * np.pi)) / (2 * np.pi), '.',
-                       label='φ(t)')
-        axs[0][0].plot(self.tlist / self.T,
-                       (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num]) % (2 * np.pi)) / (2 * np.pi), '.',
-                       label='θ(t)')
-        axs[0][0].plot(self.tlist / self.T,
-                       (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num]) % (2 * np.pi)) / (
+            rgb_colors = [(0.2, 0.4, 0.6), (0.8, 0.2, 0.4), (0.6, 0.4, 0.2)]
+
+            axs[0][0].set_title('angle dynamics', fontsize=15)
+            axs[0][0].plot(self.tlist * νfloquet, (self.angle_time(frequency_components[0])) / (2 * np.pi), '.',
+                           label='φ(t)')
+            axs[0][0].plot(self.tlist * νfloquet,
+                           (self.angle_time(frequency_components[1])) / (2 * np.pi), '.',
+                           label='θ(t)')
+            axs[0][0].plot(self.tlist * νfloquet,
+                           (self.angle_time(frequency_components[2])) / (
                                    2 * np.pi), '.',
-                       label='β(t)')
-        axs[0][0].set_xlim([0, 1])
-        axs[0][0].set_ylim([0, 1])
-        axs[0][0].set_ylabel(r'(Euler angle)$/(2\pi)$', fontsize=15)
-        axs[0][0].legend()
+                           label='β(t)')
+            axs[0][0].set_xlim([0, 1])
+            # axs[0][0].set_ylim([0, 1])
+            axs[0][0].set_ylabel(r'(Euler angle)$/(2\pi)$', fontsize=15)
+            axs[0][0].legend()
 
-        axs[1][0].set_title('periodic drives', fontsize=15)
-        axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["x"]).tr()
-                                                           for it in range(self.time_points)]) / self.ν01, '.-',
-                       label=r'$h_x(t)$',
-                       color=rgb_colors[0])
-        axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["y"]).tr()
-                                                           for it in range(self.time_points)]) / self.ν01, '.-',
-                       label=r'$h_y(t)$',
-                       color=rgb_colors[1])
-        axs[1][0].plot(self.tlist / self.T, 0.5 * np.real([(h_time[it] * static_pauli["z"]).tr()
-                                                           for it in range(self.time_points)]) / self.ν01, '.-',
-                       label=r'$h_z(t)$',
-                       color=rgb_colors[2])
-        axs[1][0].set_xlim([0, 1])
-        axs[1][0].set_xlabel('time/T', fontsize=15)
-        axs[1][0].set_ylabel(r'$h_a(t)/E_{01}$', fontsize=15)
-        axs[1][0].legend()
+            axs[1][0].set_title('periodic drives', fontsize=15)
+            axs[1][0].plot(self.tlist * νfloquet, 0.5 * np.real([(h_time[it] * static_pauli["x"]).tr()
+                                                                 for it in range(self.time_points)]) / ε01s, '.-',
+                           label=r'$h_x(t)$',
+                           color=rgb_colors[0])
+            axs[1][0].plot(self.tlist * νfloquet, 0.5 * np.real([(h_time[it] * static_pauli["y"]).tr()
+                                                                 for it in range(self.time_points)]) / ε01s, '.-',
+                           label=r'$h_y(t)$',
+                           color=rgb_colors[1])
+            axs[1][0].plot(self.tlist * νfloquet, 0.5 * np.real([(h_time[it] * static_pauli["z"]).tr()
+                                                                 for it in range(self.time_points)]) / ε01s, '.-',
+                           label=r'$h_z(t)$',
+                           color=rgb_colors[2])
+            axs[1][0].set_xlim([0, 1])
+            axs[1][0].set_xlabel('time/T', fontsize=15)
+            axs[1][0].set_ylabel(r'$h_a(t)/E_{01}$', fontsize=15)
+            axs[1][0].legend()
 
-        axs[0][1].plot(rate_data / self.decoherence_rate([self.ν01, 0, 0, 0]), '.-');
-        axs[0][1].set_title('iteration = ' + str(iteration))
-        axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma^{(0)}_2$', fontsize=15)
+            axs[0][1].plot(rate_data / self.decoherence_rate([ε01s, νfloquet, 0, 0, 0]), '.-');
+            axs[0][1].set_xlabel('iteration', fontsize=15)
+            axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma^{(0)}_2$', fontsize=15)
 
-        axs[1][1].plot(np.loadtxt('h0match_rec_FQ.txt', delimiter=',') / self.ν01, '.-');
-        axs[1][1].set_title('iteration = ' + str(iteration))
-        axs[1][1].set_xlabel('iteration', fontsize=15)
-        axs[1][1].set_ylabel(r'(h0 matching)$/ν01', fontsize=15)
+            axs[1][1].plot(h0match_data / self.hstatic_matching([ε01s, νfloquet, 0, 0, 0]), '.-');
+            axs[1][1].set_xlabel('iteration', fontsize=15)
+            axs[1][1].set_ylabel(r'(h0 matching)$/ν01', fontsize=15)
 
-        axs[2][1].imshow(np.abs(freq_data[:, 1:freq_num + 1].T), aspect='auto', cmap='plasma', origin='lower')
-        axs[2][1].set_title(r'$\vert\widetilde{φ}(m)\vert$ for iteration = ' + str(iteration))
-        axs[2][1].set_xlabel('iteration', fontsize=15)
-        axs[2][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
+            axs[2][1].imshow(np.abs(list(map(self.complexify, full_data)))[:, 0].T, aspect='auto', cmap='plasma',
+                             origin='lower')
+            axs[2][1].set_title(r'$\vert\widetilde{φ}(m)\vert$')
+            axs[2][1].set_xlabel('iteration', fontsize=15)
+            axs[2][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
 
-        axs[3][1].imshow(np.abs(freq_data[:, 1 + freq_num:freq_num + 1 + freq_num].T), aspect='auto', cmap='plasma',
-                         origin='lower')
-        axs[3][1].set_title(r'$\vert\widetilde{θ}(m)\vert$ for iteration = ' + str(iteration))
-        axs[3][1].set_xlabel('iteration', fontsize=15)
-        axs[3][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
+            axs[3][1].imshow(np.abs(list(map(self.complexify, full_data)))[:, 1].T, aspect='auto', cmap='plasma',
+                             origin='lower')
+            axs[3][1].set_title(r'$\vert\widetilde{θ}(m)\vert$')
+            axs[3][1].set_xlabel('iteration', fontsize=15)
+            axs[3][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
 
-        axs[4][1].imshow(np.abs(freq_data[:, 1 + 2 * freq_num:freq_num + 1 + 2 * freq_num].T), aspect='auto',
-                         cmap='plasma',
-                         origin='lower')
-        axs[4][1].set_title(r'$\vert\widetilde{β}(m)\vert$ for iteration = ' + str(iteration))
-        axs[4][1].set_xlabel('iteration', fontsize=15)
-        axs[4][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
+            axs[4][1].imshow(np.abs(list(map(self.complexify, full_data)))[:, 2].T, aspect='auto',
+                             cmap='plasma',
+                             origin='lower')
+            axs[4][1].set_title(r'$\vert\widetilde{β}(m)\vert$ ')
+            axs[4][1].set_xlabel('iteration', fontsize=15)
+            axs[4][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
 
-        # cbar = fig.colorbar(im, ax = axs)
+            #         # cbar = fig.colorbar(im, ax = axs)
 
-        # axs[3][1].imshow(freq_data[:,:].T, aspect='auto')
+            #         # axs[3][1].imshow(freq_data[:,:].T, aspect='auto')
 
-        axs[2][0].set_title('angle dynamics', fontsize=15)
-        axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1])) / (2 * np.pi), '.', label='φ(t)')
-        axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num])) / (2 * np.pi),
-                       '.', label='θ(t)')
-        axs[2][0].plot(self.tlist / self.T,
-                       (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num])) / (2 * np.pi), '.',
-                       label='β(t)')
-        axs[2][0].set_xlim([0, 1])
-        # axs[2][0].set_ylim([0,1])
-        axs[2][0].set_ylabel(r'(Euler angle)$/(2\pi)$', fontsize=15)
-        axs[2][0].legend()
+            #         axs[2][0].set_title('angle dynamics', fontsize=15)
+            #         axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1])) / (2 * np.pi), '.', label='φ(t)')
+            #         axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num])) / (2 * np.pi),
+            #                        '.', label='θ(t)')
+            #         axs[2][0].plot(self.tlist / self.T,
+            #                        (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num])) / (2 * np.pi), '.',
+            #                        label='β(t)')
+            #         axs[2][0].set_xlim([0, 1])
+            #         # axs[2][0].set_ylim([0,1])
+            #         axs[2][0].set_ylabel(r'(Euler angle)$/(2\pi)$', fontsize=15)
+            #         axs[2][0].legend()
 
-        # plt.sca(axs[0, 2])
-        # b.axes
+            # plt.sca(axs[0, 2])
+            # b.axes
 
-        [axs[r][s].grid(True, color='gray', linestyle='--', linewidth=0.5) for r in range(nrows) for s in range(ncols)]
-        [axs[r][s].tick_params(axis='both', which='both', labelsize=15) for r in range(nrows) for s in range(ncols)]
-        plt.subplots_adjust(top=1.5, hspace=0.5, wspace=0.25)
+            [axs[r][s].grid(True, color='gray', linestyle='--', linewidth=0.5) for r in range(nrows) for s in
+             range(ncols)]
+            [axs[r][s].tick_params(axis='both', which='both', labelsize=15) for r in range(nrows) for s in range(ncols)]
+            plt.subplots_adjust(top=1.5, hspace=0.5, wspace=0.25)
