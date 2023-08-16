@@ -499,11 +499,11 @@ class FloquetQubit:
 
         axs[0][1].plot(rate_data / self.decoherence_rate([ε01s, νfloquet, 0, 0, 0]), '.-');
         axs[0][1].set_xlabel('iteration', fontsize=15)
-        axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma^{(0)}_2$', fontsize=15)
+        axs[0][1].set_ylabel(r'$\Gamma_2/\Gamma_{2,static}$', fontsize=15)
 
         axs[1][1].plot(h0match_data / self.hstatic_matching([ε01s, νfloquet, 0, 0, 0]), '.-');
         axs[1][1].set_xlabel('iteration', fontsize=15)
-        axs[1][1].set_ylabel(r'(h0 matching)$/ν01', fontsize=15)
+        axs[1][1].set_ylabel(r'$(h0 matching)/(h0 matching)_{static}$', fontsize=15)
 
         axs[2][1].imshow(np.abs(list(map(self.complexify, full_data)))[:, 0].T, aspect='auto', cmap='plasma',
                          origin='lower')
@@ -524,24 +524,6 @@ class FloquetQubit:
         axs[4][1].set_xlabel('iteration', fontsize=15)
         axs[4][1].set_ylabel(r'$\omega/ω_{floquet}$', fontsize=15)
 
-        #         # cbar = fig.colorbar(im, ax = axs)
-
-        #         # axs[3][1].imshow(freq_data[:,:].T, aspect='auto')
-
-        #         axs[2][0].set_title('angle dynamics', fontsize=15)
-        #         axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1:freq_num + 1])) / (2 * np.pi), '.', label='φ(t)')
-        #         axs[2][0].plot(self.tlist / self.T, (self.angle_time(solx[1 + freq_num:freq_num + 1 + freq_num])) / (2 * np.pi),
-        #                        '.', label='θ(t)')
-        #         axs[2][0].plot(self.tlist / self.T,
-        #                        (self.angle_time(solx[1 + 2 * freq_num:freq_num + 1 + 2 * freq_num])) / (2 * np.pi), '.',
-        #                        label='β(t)')
-        #         axs[2][0].set_xlim([0, 1])
-        #         # axs[2][0].set_ylim([0,1])
-        #         axs[2][0].set_ylabel(r'(Euler angle)$/(2\pi)$', fontsize=15)
-        #         axs[2][0].legend()
-
-        # plt.sca(axs[0, 2])
-        # b.axes
 
         [axs[r][s].grid(True, color='gray', linestyle='--', linewidth=0.5) for r in range(nrows) for s in
          range(ncols)]
