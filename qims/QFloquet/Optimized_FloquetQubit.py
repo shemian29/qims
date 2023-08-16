@@ -369,8 +369,30 @@ class FloquetQubit:
         """
         return np.fft.irfft((2*np.pi*νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq, n=self.time_points,
                             norm="forward")
+    def drives_xyz(self, parameters: List[complex]) -> float:
+        """
+        Calculate the periodic drives derived from the inferred Hamiltonian
 
+        :param parameters: list of parameters to be optimized. The first parameter is the Floquet quasi-energy ε01. The remaining parameters are the frequency components of the three angles φ, θ, β.
+        :return: drives in the x, y, z directions
 
+        Example:
+        >>> drives_xyz([0.1, 0.2, 1, 0.5+0.4j, 0.4, 0.4+0.9j, 0.12, 0.4+0.43j])
+        """
+
+        ε01 = parameters[0].real
+        νfloquet = parameters[1].real
+        frequency_components = parameters[2:]
+
+        su2_rot = self.su2_rotation_freq_to_time(frequency_components)
+        su2_rot_dot = self.su2_rotation_freq_to_time_dot(frequency_components, νfloquet)
+
+        h_time = self.hamiltonian(ε01, su2_rot, su2_rot_dot)
+
+        return [[(static_pauli['x']*h_time[it]).tr()/2,
+                 (static_pauli['y']*h_time[it]).tr()/2,
+                 (static_pauli['z']*h_time[it]).tr()/2]
+                for it in range(self.time_points)]
 
     def complexify(self, parameters_extended):
         #Count the number of frequency components by discarding the quasi-energy and Floquet frequency components
