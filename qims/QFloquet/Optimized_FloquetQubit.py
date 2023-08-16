@@ -50,7 +50,7 @@ class FloquetQubit:
         string = "Floquet qubit of the form: "
         string = (
                 string
-                + r"$\vert v_{\pm}(t)\rangle = e^{i \beta_{\pm}(t)}\left( \begin{array}{c} \pm e^{-i \varphi(t)/2} \cos\left(\frac{\theta(t)}{2}\right)  \\ e^{i \varphi(t)/2}\sin\left(\frac{\theta(t)}{2}\right)  \end{array} \right).   $   "
+                + r"$\vert v_{\sigma}(t)\rangle = e^{-i(-1)^{\sigma} \frac{\beta_(t)}{2}}\left( \begin{array}{c}  e^{-i \varphi(t)/2} \cos\left(\frac{\theta(t)+\sigma \pi}{2}\right)  \\ e^{i \varphi(t)/2}\sin\left(\frac{\theta(t)+\sigma \pi}{2}\right)  \end{array} \right).   $   "
         )
 
         return string
