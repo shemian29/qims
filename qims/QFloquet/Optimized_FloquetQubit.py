@@ -33,6 +33,7 @@ class FloquetQubit:
 
         ε01 = system["dynamic"]["ε01"]
         νfloquet = system["dynamic"]["νfloquet"]
+        #frequency components in complex form
         frequency_components = system["dynamic"]["φ"] + system["dynamic"]["θ"] + system["dynamic"]["β"]
 
         self.su2_rot = self.su2_rotation_freq_to_time(frequency_components)
@@ -138,7 +139,7 @@ class FloquetQubit:
         """Calculate the temporal components of an angle variable from its frequency components.
 
         :param angle_freq: frequency components of the three angles φ, θ, β
-        :return: list of angles in the time domain with number of time points equal to time_points
+        :return: list of angles in the time domain with number of time points equal to time_points. Assumes padding with zeros in the frequency domain. The first component is the zero-frequency component and is real, and the rest are complex.
 
         Example:
         >>> angle_time([1,2*1j,3])
