@@ -213,8 +213,8 @@ class FloquetQubit:
         Example:
         >>> hamiltonian(1, FQ.su2_rotation_freq_to_time([0.1,0.2,0.3]), FQ.su2_rotation_freq_to_time_dot([0.1,0.2,0.3]))
         """
-        return [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag() + 1j * su2_rotation_dot[it] *
-                su2_rotation[it].dag()
+        return [0.5 * ε01 * su2_rotation[it] * static_pauli["z"] * su2_rotation[it].dag()
+                + 1j * su2_rotation_dot[it] * su2_rotation[it].dag()
                 for it in range(self.time_points)]
 
     def hstatic_matching(self, parameters: List[complex]) -> float:
