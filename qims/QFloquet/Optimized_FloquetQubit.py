@@ -229,8 +229,8 @@ class FloquetQubit:
 
         """
 
-        ε01 = parameters[0]
-        νfloquet = parameters[1]
+        ε01 = parameters[0].real
+        νfloquet = parameters[1].real
         frequency_components = parameters[2:]
 
         su2_rot = self.su2_rotation_freq_to_time(frequency_components)
@@ -302,8 +302,8 @@ class FloquetQubit:
         #                        tmp[0] + 1j * tmp[
         #                            1]])  # non-zero complex frequency components of the three angles φ, θ, β
 
-        ε01 = parameters[0]
-        νfloquet = parameters[1]
+        ε01 = parameters[0].real
+        νfloquet = parameters[1].real
         frequency_components = parameters[2:]
 
         su2_rot = self.su2_rotation_freq_to_time(frequency_components)
@@ -368,8 +368,8 @@ class FloquetQubit:
         #                        parameters[2:5],# zero-frequency component, which is real, for all angles φ, θ, β
         #                        tmp[0]+1j*tmp[1]]) # non-zero complex frequency components of the three angles φ, θ, β
         parameters_extended = np.array(parameters_extended)
-        ε01 = parameters_extended[0]
-        νfloquet = parameters_extended[1]
+        ε01 = parameters_extended[0].real
+        νfloquet = parameters_extended[1].real
 
         num_freqs = int((int(len(parameters_extended[2:]) / 3) + 1) / 2)
         frequency_components = parameters_extended[2:].reshape((3, 2 * num_freqs - 1))
