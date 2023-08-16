@@ -79,7 +79,7 @@ class FloquetQubit:
         parameters_differential_evolution = []
         rate_record = []
         h0match_rec = []
-        quasi_energy_range = (0, 10 * np.max([self.ν01, nu0]))
+        quasi_energy_range = (0.0123456, 10 * np.max([self.ν01, nu0]))
         frequency_range = (0.1 * np.min([self.ν01, nu0]), 10 * np.max([self.ν01, nu0]))
         frequency_components_range = (-1.0, 1.0)
         self.optimal_qubit = differential_evolution(
