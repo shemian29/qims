@@ -457,7 +457,8 @@ class FloquetQubit:
         su2_time = self.su2_rotation_freq_to_time(frequency_components.flatten())
         su2_timedot = self.su2_rotation_freq_to_time_dot(frequency_components.flatten(), νfloquet)
 
-        self.tlist = np.linspace(0, 1 / νfloquet, self.time_points)
+        # self.tlist = np.linspace(0, 1 / νfloquet, self.time_points)
+        self.tlist = np.arange(0, 1 / νfloquet, 1 / (self.time_points * νfloquet))
         h_time = self.hamiltonian(ε01s, su2_time, su2_timedot)
 
         ncols, nrows = 3, 5
