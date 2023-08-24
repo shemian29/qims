@@ -7,6 +7,7 @@ from qims.QMB.qplot import PlotTowers
 from qims.QMB.qoptimize import error, opt_towers, GenScarData
 
 from qims.QFloquet.Optimized_FloquetQubit import FloquetQubit
+from qims.QFloquet.Optimized_FloquetQubit_alternate import FloquetQubit_alt
 # from qims.QFloquet.FloquetQubit import FloquetQubit
 from qims.QFloquet.FloquetMap import DirectFloquetMap
 from qims.QFloquet.DecoherenceRates import filter_coefficients, dephasing_rate, Sf
