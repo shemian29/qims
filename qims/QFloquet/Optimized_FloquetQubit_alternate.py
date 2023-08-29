@@ -322,12 +322,58 @@ class FloquetQubit_alt:
 
         return sm
 
-    def check_su2_rotation_freq_to_time_dot(self, parameters=None) -> ndarray:
-        print("Check time derivative of SU(2) matrix by comparing analytic with numerical expressions:")
+    def check_su2_rotation_freq_to_time_dot(self, time_points: float = 200, plot = False) -> None:
+        """
+        Check the accuracy of the method su2_rotation_freq_to_time_dot()
+        :param time_points: number of time points to check
+        """
+        time_points_old = self.time_points
+        self.update_time_points(time_points)
+
         su2fq = self.su2_rotation_freq_to_time()
         su2fq_dot = self.su2_rotation_freq_to_time_dot()
-        return np.array([(((su2fq[it + 1] - su2fq[it]) / np.diff(self.tlist)[0]) - su2fq_dot[it]).full()
-                         for it in range(self.time_points - 1)])
+
+        tmp = np.array([np.linalg.norm(
+            ((0.5 * (su2fq[it + 1] - su2fq[it - 1]) / np.diff(self.tlist)[0]) - su2fq_dot[it]).full()) / (
+                                    np.linalg.norm(su2fq_dot[it].full()) + 0.000000001)
+                        for it in range(1, self.time_points - 1)])
+        self.update_time_points(time_points_old)
+        print('Maximal relative deviation over period: max_t norm(SU2_analytic_dot[t] - SU2_numerical_dot[t])/norm('
+              'SU2_analytic_dot[t]) = ',
+              np.max(tmp))
+        if plot:
+            plt.plot(self.tlist[1:-1], tmp)
+            plt.show()
+
+
+    def check_angle_freq_to_time_dot(self, time_points: float = 200, plot = False) -> None:
+        """
+        :param time_points: number of time points to check
+        :return: None
+        """
+        time_points_old = self.time_points
+        self.update_time_points(time_points)
+
+        scan = []
+        angles = ['φ_m', 'θ_m', 'β_m']
+        for angle in angles:
+            αs_freq = self.floquet_qubit_parameters['dynamic'][angle]
+            αs_time = np.array(self.angle_time(αs_freq))
+            αs_dot_numeric = np.array([0.5 * (αs_time[it + 1] - αs_time[it - 1]) / np.diff(self.tlist)[0] for it in
+                                       range(1, self.time_points - 1)])
+            αs_dot_analytic = self.angle_time_dot(αs_freq)[1:self.time_points - 1]
+            scan.append(np.abs(αs_dot_numeric - αs_dot_analytic) / (αs_dot_analytic + 0.000000001))
+        print(
+            "Maximal relative deviation across the three Euler angles: max_t |α_analytic(t)-α_numeric(t)|/|α_analytic(t)| = ",
+            np.max(scan))
+        if plot:
+            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[0]), label='φ')
+            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[1]), label='θ')
+            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[2]), label='β')
+            plt.legend()
+            plt.show()
+        self.update_time_points(time_points_old)
+
 
     def su2_rotation_freq_to_time(self, parameters=None) -> List[qt.Qobj]:
         """
