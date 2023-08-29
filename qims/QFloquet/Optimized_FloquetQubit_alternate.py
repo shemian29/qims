@@ -423,7 +423,7 @@ class FloquetQubit_alt:
         """
         return np.fft.irfft(angle_freq, n=self.time_points, norm="forward")
 
-    def angle_time_dot(self, angle_freq: complex, νfloquet: float) -> np.ndarray:
+    def angle_time_dot(self, angle_freq: complex) -> np.ndarray:
         """
         Calculate the temporal components of the time derivative of an angle variable from its frequency components.
 
