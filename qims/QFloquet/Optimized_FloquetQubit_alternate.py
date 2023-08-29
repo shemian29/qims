@@ -41,7 +41,7 @@ class FloquetQubit_alt:
         #                        1 / (self.time_points * system["dynamic"]["νfloquet"]))
         self.tlist = np.linspace(0, 1 / system["dynamic"]["νfloquet"],
                                self.time_points+1)[:-1]
-
+        self.νfloquet = system["dynamic"]["νfloquet"]
     def _repr_latex_(self):
 
         string = "Floquet qubit of the form: "
@@ -379,9 +379,9 @@ class FloquetQubit_alt:
         θ_t = self.angle_time(angle_freq_tmp[1])
         β_t = self.angle_time(angle_freq_tmp[2])
 
-        φ_tdot = self.angle_time_dot(angle_freq_tmp[0], νfloquet)
-        θ_tdot = self.angle_time_dot(angle_freq_tmp[1], νfloquet)
-        β_tdot = self.angle_time_dot(angle_freq_tmp[2], νfloquet)
+        φ_tdot = self.angle_time_dot(angle_freq_tmp[0])
+        θ_tdot = self.angle_time_dot(angle_freq_tmp[1])
+        β_tdot = self.angle_time_dot(angle_freq_tmp[2])
 
         return [self.su2_rotation_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in
                 range(self.time_points)]
@@ -434,7 +434,7 @@ class FloquetQubit_alt:
         Example:
         >>> angle_time_dot([1,2,3])
         """
-        return np.fft.irfft((2 * np.pi * νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq,
+        return np.fft.irfft((2 * np.pi * self.νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq,
                             n=self.time_points,
                             norm="forward")
 
