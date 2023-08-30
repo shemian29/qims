@@ -3,9 +3,10 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 import qutip as qt
-from numpy import ndarray
 from scipy.optimize import differential_evolution
 import scipy as scp
+from scipy.sparse import hstack
+
 
 static_pauli = {"x": qt.sigmax(),
                 "y": qt.sigmay(),
@@ -26,7 +27,7 @@ class FloquetQubit_alt:
 
         self.optimal_qubit = None
         self.cost0 = None
-        self.time_points = 200  # increases the number of points sampled on the frequency lattice since T is fixed
+        self.time_points = 500  # increases the number of points sampled on the frequency lattice since T is fixed
 
         self.floquet_qubit_parameters = system
 
@@ -37,11 +38,10 @@ class FloquetQubit_alt:
         self.h_qubit = 0.5 * self.E01 * (np.cos(self.φ_0) * np.sin(self.θ_0) * static_pauli["x"] +
                                          np.sin(self.φ_0) * np.sin(self.θ_0) * static_pauli["y"] +
                                          np.cos(self.θ_0) * static_pauli["z"])
-        # self.tlist = np.arange(0, 1 / system["dynamic"]["νfloquet"],
-        #                        1 / (self.time_points * system["dynamic"]["νfloquet"]))
-        self.tlist = np.linspace(0, 1 / system["dynamic"]["νfloquet"],
-                               self.time_points+1)[:-1]
+
+        self.tlist = np.linspace(0, 1 / system["dynamic"]["νfloquet"],self.time_points+1)[:-1]
         self.νfloquet = system["dynamic"]["νfloquet"]
+
     def _repr_latex_(self):
 
         string = "Floquet qubit of the form: "
@@ -63,8 +63,7 @@ class FloquetQubit_alt:
         >>> update_time_points(200)
         """
         self.time_points = time_points
-        # self.tlist = np.arange(0, 1 / self.floquet_qubit_parameters["dynamic"]["νfloquet"],
-        #                        1 / (self.time_points * self.floquet_qubit_parameters["dynamic"]["νfloquet"]))
+
         self.tlist = np.linspace(0, 1 / self.floquet_qubit_parameters["dynamic"]["νfloquet"],
                                  self.time_points + 1)[:-1]
     def search_floquet_qubit(self, number_frequencies: int = 2, maxiter: int = 10000000) -> scp.optimize.OptimizeResult:
@@ -160,9 +159,23 @@ class FloquetQubit_alt:
         """
         global iteration_step, parameters_differential_evolution, rate_record, h0match_rec
 
+        parameters_extended = np.array(parameters)
+
+        frequency_components = self.complexify(parameters_extended)
+        internal_floquet_qubit_parameters = {
+            "dynamic": {
+                "ε01": parameters_extended[0].real,
+                "φ_m": frequency_components[0].tolist(),
+                "θ_m": frequency_components[1].tolist(),
+                "β_m": frequency_components[2].tolist(),
+                "νfloquet": parameters_extended[1].real
+            }
+        }
+
+
         parameters_differential_evolution.append(parameters)
-        rate_record.append(self.decoherence_rate(parameters))
-        h0match_rec.append(self.hstatic_matching(parameters))
+        rate_record.append(self.decoherence_rate(parameters=internal_floquet_qubit_parameters))
+        h0match_rec.append(self.hstatic_matching(parameters=internal_floquet_qubit_parameters))
 
         np.savetxt('parameters_differential_evolution.txt', parameters_differential_evolution, delimiter=',')
         np.savetxt('rate_record.txt', rate_record)
@@ -322,6 +335,211 @@ class FloquetQubit_alt:
 
         return sm
 
+    def check_all(self, plot=False):
+        self.check_Floquet_spectrum(plot=plot)
+        self.check_hamiltonian_part_1(plot=plot)
+        self.check_hamiltonian_part_2(plot=plot)
+        self.check_hamiltonian_full(plot=plot)
+        self.check_su2_rotation_freq_to_time_dot(plot=plot)
+        self.check_angle_freq_to_time_dot(plot=plot)
+
+    def check_Floquet_spectrum(self, plot=False):
+        ε01 = self.floquet_qubit_parameters['dynamic']['ε01']
+        νfloquet = self.νfloquet
+
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
+
+        φ_t_dot = self.angle_time_dot("φ")
+        θ_t_dot = self.angle_time_dot("θ")
+        β_t_dot = self.angle_time_dot("β")
+
+        φ = qt.Cubic_Spline(self.tlist[0], self.tlist[-1], φ_t)
+        θ = qt.Cubic_Spline(self.tlist[0], self.tlist[-1], θ_t)
+        β_dot = qt.Cubic_Spline(self.tlist[0], self.tlist[-1], β_t_dot)
+        θ_dot = qt.Cubic_Spline(self.tlist[0], self.tlist[-1], θ_t_dot)
+        φ_dot = qt.Cubic_Spline(self.tlist[0], self.tlist[-1], φ_t_dot)
+
+        H_static = 0. * static_pauli['z']
+
+        H_dynamic = list([H_static])
+
+        H_dynamic.append([static_pauli['x'] / 2,
+                          lambda t, args: np.cos(φ(t)) * np.sin(θ(t)) * (ε01 + β_dot(t)) - np.sin(φ(t)) * θ_dot(t)])
+
+        H_dynamic.append([static_pauli['y'] / 2,
+                          lambda t, args: np.sin(φ(t)) * np.sin(θ(t)) * (ε01 + β_dot(t)) + np.cos(φ(t)) * θ_dot(t)])
+
+        H_dynamic.append([static_pauli['z'] / 2,
+                          lambda t, args: np.cos(θ(t)) * (ε01 + β_dot(t)) + φ_dot(t)])
+
+        f_modes, f_energies = qt.floquet_modes(
+            H=H_dynamic, T=1 / νfloquet, sort=True
+        )
+
+        fmodes_table = qt.floquet_modes_table(
+            f_modes,
+            f_energies,
+            self.tlist,
+            H_dynamic,
+            T=1 / νfloquet
+        )
+
+        states = [[qt.Qobj(np.array([np.exp(-1j * (β_t[it] + φ_t[it]) / 2) * np.cos(θ_t[it] / 2),
+                                     np.exp(-1j * (β_t[it] - φ_t[it]) / 2) * np.sin(θ_t[it] / 2)])),
+                   qt.Qobj(np.array([-np.exp(1j * (β_t[it] - φ_t[it]) / 2) * np.sin(θ_t[it] / 2),
+                                     np.exp(1j * (β_t[it] + φ_t[it]) / 2) * np.cos(θ_t[it] / 2)]))] for it in
+                  range(self.time_points)]
+
+        scan = []
+        for it in range(self.time_points):
+            V_alt = self.npqt2qtqt(fmodes_table[it])
+            V_origin = self.npqt2qtqt(states[it])
+
+            tmp = (V_alt.dag() * V_origin).diag()
+            V_alt_2 = self.npqt2qtqt([tmp[it2] * fmodes_table[it][it2] for it2 in [0, 1]])
+
+            scan.append((V_alt_2.dag() * V_origin - qt.identity(2)).norm())
+
+        print("- Match of calculated Floquet quasi-energy with input spectrum:",-np.diff(f_energies)[0], ε01, -np.diff(f_energies)- ε01)
+        print("- Maximum deviation from identity of overlaps between Floquet eigenstates with input states:", np.max(scan))
+        if plot:
+            plt.plot(self.tlist/self.νfloquet, scan)
+            plt.xlabel("Time νfloquet")
+            plt.grid()
+            plt.show()
+
+        print()
+
+    def check_hamiltonian_part_1(self, plot=False):
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
+
+        φ_t_dot = self.angle_time_dot("φ")
+        θ_t_dot = self.angle_time_dot("θ")
+        β_t_dot = self.angle_time_dot("β")
+
+        ε01 = self.floquet_qubit_parameters['dynamic']['ε01']
+
+        V1x = 0.5 * ε01 * np.cos(φ_t) * np.sin(θ_t)
+        V1y = 0.5 * ε01 * np.sin(φ_t) * np.sin(θ_t)
+        V1z = 0.5 * ε01 * np.cos(θ_t)
+
+        su2_rot = self.su2_rotation_freq_to_time()
+        H1 = [0.5 * ε01 * su2_rot[it] * static_pauli["z"] * su2_rot[it].dag()
+              for it in range(self.time_points)]
+        v1x = [0.5 * (H1[it] * static_pauli["x"]).tr() for it in range(self.time_points)]
+        v1y = [0.5 * (H1[it] * static_pauli["y"]).tr() for it in range(self.time_points)]
+        v1z = [0.5 * (H1[it] * static_pauli["z"]).tr() for it in range(self.time_points)]
+
+        delta = np.linalg.norm([v1x-V1x,v1y-V1y,v1z-V1z])
+
+        print("- Difference between time-dependent coefficients for two independent calculations:", delta)
+
+        if plot:
+            plt.plot(self.tlist*self.νfloquet,np.real(v1x), '.', label = 'v1x')
+            plt.plot(self.tlist*self.νfloquet,np.real(v1y), '.', label = 'v1y')
+            plt.plot(self.tlist*self.νfloquet,np.real(v1z), '.', label = 'v1z')
+
+            plt.plot(self.tlist*self.νfloquet,V1x, label = 'V1x')
+            plt.plot(self.tlist*self.νfloquet,V1y, label = 'V1y')
+            plt.plot(self.tlist*self.νfloquet,V1z, label = 'V1z')
+
+            plt.title("Comparison of the time-dependent coefficients of the Hamiltonian part 1")
+            plt.legend()
+            plt.grid()
+            plt.xlabel("Time νfloquet")
+
+            plt.show()
+
+        print()
+
+    def check_hamiltonian_part_2(self, plot=False):
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
+
+        φ_t_dot = self.angle_time_dot("φ")
+        θ_t_dot = self.angle_time_dot("θ")
+        β_t_dot = self.angle_time_dot("β")
+
+        ε01 = self.floquet_qubit_parameters['dynamic']['ε01']
+
+        V2x = 0.5 * (np.cos(φ_t) * np.sin(θ_t) * β_t_dot - np.sin(φ_t) * θ_t_dot)
+        V2y = 0.5 * (np.sin(φ_t) * np.sin(θ_t) * β_t_dot + np.cos(φ_t) * θ_t_dot)
+        V2z = 0.5 * (np.cos(θ_t) * β_t_dot + φ_t_dot)
+
+        su2_rot = self.su2_rotation_freq_to_time()
+        su2_rot_dot = self.su2_rotation_freq_to_time_dot()
+
+        H2 = [1j * su2_rot_dot[it] * su2_rot[it].dag()
+              for it in range(self.time_points)]
+        v2x = [0.5 * (H2[it] * static_pauli["x"]).tr() for it in range(self.time_points)]
+        v2y = [0.5 * (H2[it] * static_pauli["y"]).tr() for it in range(self.time_points)]
+        v2z = [0.5 * (H2[it] * static_pauli["z"]).tr() for it in range(self.time_points)]
+
+        delta = np.linalg.norm([v2x - V2x, v2y - V2y, v2z - V2z])
+
+        print("- Difference between time-dependent coefficients for two independent calculations:", delta)
+
+        if plot:
+            plt.plot(self.tlist*self.νfloquet,np.real(v2x), '.', label='v2x')
+            plt.plot(self.tlist*self.νfloquet,np.real(v2y), '.', label='v2y')
+            plt.plot(self.tlist*self.νfloquet,np.real(v2z), '.', label='v2z')
+
+            plt.plot(self.tlist*self.νfloquet,V2x, label='V2x')
+            plt.plot(self.tlist*self.νfloquet,V2y, label='V2y')
+            plt.plot(self.tlist*self.νfloquet,V2z, label='V2z')
+
+            plt.title("Comparison of the time-dependent coefficients of the Hamiltonian part 2")
+            plt.legend()
+            plt.grid()
+            plt.xlabel("Time νfloquet")
+
+            plt.show()
+        print()
+
+    def check_hamiltonian_full(self, plot=False):
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
+
+        φ_t_dot = self.angle_time_dot("φ")
+        θ_t_dot = self.angle_time_dot("θ")
+        β_t_dot = self.angle_time_dot("β")
+
+        ε01 = self.floquet_qubit_parameters['dynamic']['ε01']
+
+        Vx = 0.5 * ε01 * np.cos(φ_t) * np.sin(θ_t) + 0.5 * (np.cos(φ_t) * np.sin(θ_t) * β_t_dot - np.sin(φ_t) * θ_t_dot)
+        Vy = 0.5 * ε01 * np.sin(φ_t) * np.sin(θ_t) + 0.5 * (np.sin(φ_t) * np.sin(θ_t) * β_t_dot + np.cos(φ_t) * θ_t_dot)
+        Vz = 0.5 * ε01 * np.cos(θ_t) + 0.5 * (np.cos(θ_t) * β_t_dot + φ_t_dot)
+
+
+        vx, vy, vz = self.drives_xyz()
+
+        delta = np.linalg.norm([vx - Vx, vy - Vy, vz - Vz])
+
+        print("- Difference between time-dependent coefficients for two independent calculations:", delta)
+
+        if plot:
+            plt.plot(self.tlist*self.νfloquet,np.real(vx), '.', label='vx')
+            plt.plot(self.tlist*self.νfloquet,np.real(vy), '.', label='vy')
+            plt.plot(self.tlist*self.νfloquet,np.real(vz), '.', label='vz')
+
+            plt.plot(self.tlist*self.νfloquet,Vx, label='Vx')
+            plt.plot(self.tlist*self.νfloquet,Vy, label='Vy')
+            plt.plot(self.tlist*self.νfloquet,Vz, label='Vz')
+
+            plt.title("Comparison of the time-dependent coefficients of the full Hamiltonian")
+            plt.legend()
+            plt.grid()
+            plt.xlabel("Time νfloquet")
+
+            plt.show()
+        print()
+
     def check_su2_rotation_freq_to_time_dot(self, time_points: float = 200, plot = False) -> None:
         """
         Check the accuracy of the method su2_rotation_freq_to_time_dot()
@@ -337,14 +555,19 @@ class FloquetQubit_alt:
             ((0.5 * (su2fq[it + 1] - su2fq[it - 1]) / np.diff(self.tlist)[0]) - su2fq_dot[it]).full()) / (
                                     np.linalg.norm(su2fq_dot[it].full()) + 0.000000001)
                         for it in range(1, self.time_points - 1)])
-        self.update_time_points(time_points_old)
-        print('Maximal relative deviation over period: max_t norm(SU2_analytic_dot[t] - SU2_numerical_dot[t])/norm('
+
+        print('- Maximal relative deviation over period: max_t norm(SU2_analytic_dot[t] - SU2_numerical_dot[t])/norm('
               'SU2_analytic_dot[t]) = ',
               np.max(tmp))
         if plot:
-            plt.plot(self.tlist[1:-1], tmp)
+            plt.plot(self.tlist[1:-1]*self.νfloquet, tmp)
+
+            plt.grid()
+            plt.xlabel("Time νfloquet")
             plt.show()
 
+        print()
+        self.update_time_points(time_points_old)
 
     def check_angle_freq_to_time_dot(self, time_points: float = 200, plot = False) -> None:
         """
@@ -355,23 +578,28 @@ class FloquetQubit_alt:
         self.update_time_points(time_points)
 
         scan = []
-        angles = ['φ_m', 'θ_m', 'β_m']
+        angles = ['φ', 'θ', 'β']
         for angle in angles:
-            αs_freq = self.floquet_qubit_parameters['dynamic'][angle]
-            αs_time = np.array(self.angle_time(αs_freq))
+            αs_time = np.array(self.angle_time(angle))
             αs_dot_numeric = np.array([0.5 * (αs_time[it + 1] - αs_time[it - 1]) / np.diff(self.tlist)[0] for it in
                                        range(1, self.time_points - 1)])
-            αs_dot_analytic = self.angle_time_dot(αs_freq)[1:self.time_points - 1]
+            αs_dot_analytic = self.angle_time_dot(angle)[1:self.time_points - 1]
             scan.append(np.abs(αs_dot_numeric - αs_dot_analytic) / (αs_dot_analytic + 0.000000001))
         print(
-            "Maximal relative deviation across the three Euler angles: max_t |α_analytic(t)-α_numeric(t)|/|α_analytic(t)| = ",
+            "- Maximal relative deviation across the three Euler angles: max_t |α_analytic(t)-α_numeric(t)|/|α_analytic(t)| = ",
             np.max(scan))
+
         if plot:
-            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[0]), label='φ')
-            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[1]), label='θ')
-            plt.plot(self.tlist[1:self.time_points - 1], np.abs(scan[2]), label='β')
+            plt.plot(self.tlist[1:self.time_points - 1]*self.νfloquet, np.abs(scan[0]), label='φ')
+            plt.plot(self.tlist[1:self.time_points - 1]*self.νfloquet, np.abs(scan[1]), label='θ')
+            plt.plot(self.tlist[1:self.time_points - 1]*self.νfloquet, np.abs(scan[2]), label='β')
             plt.legend()
+            plt.grid()
+            plt.xlabel("Time νfloquet")
+
             plt.show()
+
+        print()
         self.update_time_points(time_points_old)
 
 
@@ -393,9 +621,9 @@ class FloquetQubit_alt:
 
         angle_freq_tmp = np.array(angle_freq).reshape((3, int(len(angle_freq) / 3)))
 
-        φ_t = self.angle_time(angle_freq_tmp[0])
-        θ_t = self.angle_time(angle_freq_tmp[1])
-        β_t = self.angle_time(angle_freq_tmp[2])
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
 
         return [self.su2_rotation(φ_t[it], θ_t[it], β_t[it]) for it in range(self.time_points)]
 
@@ -414,20 +642,19 @@ class FloquetQubit_alt:
         if parameters is None:
             parameters = self.floquet_qubit_parameters
 
-        νfloquet = parameters['dynamic']['νfloquet']
         angle_freq = parameters['dynamic']['φ_m']  # As complex numbers
         angle_freq = angle_freq + parameters['dynamic']['θ_m']  # As complex numbers
         angle_freq = angle_freq + parameters['dynamic']['β_m']  # As complex numbers
 
         angle_freq_tmp = np.array(angle_freq).reshape((3, int(len(angle_freq) / 3)))
 
-        φ_t = self.angle_time(angle_freq_tmp[0])
-        θ_t = self.angle_time(angle_freq_tmp[1])
-        β_t = self.angle_time(angle_freq_tmp[2])
+        φ_t = self.angle_time("φ")
+        θ_t = self.angle_time("θ")
+        β_t = self.angle_time("β")
 
-        φ_tdot = self.angle_time_dot(angle_freq_tmp[0])
-        θ_tdot = self.angle_time_dot(angle_freq_tmp[1])
-        β_tdot = self.angle_time_dot(angle_freq_tmp[2])
+        φ_tdot = self.angle_time_dot("φ")
+        θ_tdot = self.angle_time_dot("θ")
+        β_tdot = self.angle_time_dot("β")
 
         return [self.su2_rotation_dot(φ_t[it], θ_t[it], β_t[it], φ_tdot[it], θ_tdot[it], β_tdot[it]) for it in
                 range(self.time_points)]
@@ -457,19 +684,22 @@ class FloquetQubit_alt:
 
         return qt.Qobj(tmp)
 
-    def angle_time(self, angle_freq: List[complex]) -> np.ndarray:
+    def angle_time(self, angle_string) -> np.ndarray:
         """Calculate the temporal components of an angle variable from its frequency components.
 
-        :param angle_freq: frequency components of the three angles φ, θ, β :return: list of angles in the time
+        :param angle_string:
+        :param angle_freq: frequency components of the three angles φ, θ, β
+        :return: list of angles in the time
         domain with number of time points equal to time_points. Assumes padding with zeros in the frequency domain.
         The first component is the zero-frequency component and is real, and the rest are complex.
 
         Example:
-        >>> angle_time([1,2*1j,3])
+        >>> angle_time("φ")
         """
-        return np.fft.irfft(angle_freq, n=self.time_points, norm="forward")
 
-    def angle_time_dot(self, angle_freq: complex) -> np.ndarray:
+        return np.fft.irfft(self.floquet_qubit_parameters['dynamic'][angle_string+"_m"], n=self.time_points, norm="forward")
+
+    def angle_time_dot(self, angle_string) -> np.ndarray:
         """
         Calculate the temporal components of the time derivative of an angle variable from its frequency components.
 
@@ -478,8 +708,9 @@ class FloquetQubit_alt:
         :return: list of time derivatives of angle in the time domain with number of time points equal to time_points
 
         Example:
-        >>> angle_time_dot([1,2,3])
+        >>> angle_time_dot("φ")
         """
+        angle_freq = self.floquet_qubit_parameters['dynamic'][angle_string+"_m"]
         return np.fft.irfft((2 * np.pi * self.νfloquet * 1j) * np.arange(0, len(angle_freq)) * angle_freq,
                             n=self.time_points,
                             norm="forward")
@@ -571,13 +802,14 @@ class FloquetQubit_alt:
         rgb_colors = [(0.2, 0.4, 0.6), (0.8, 0.2, 0.4), (0.6, 0.4, 0.2)]
 
         axs[0][0].set_title('angle dynamics', fontsize=15)
-        axs[0][0].plot(self.tlist * νfloquet, (self.angle_time(frequency_components[0])) / (2 * np.pi), '.',
+        axs[0][0].plot(self.tlist * νfloquet,
+                       (self.angle_time("φ")) / (2 * np.pi), '.',
                        label='φ(t)')
         axs[0][0].plot(self.tlist * νfloquet,
-                       (self.angle_time(frequency_components[1])) / (2 * np.pi), '.',
+                       (self.angle_time("θ")) / (2 * np.pi), '.',
                        label='θ(t)')
         axs[0][0].plot(self.tlist * νfloquet,
-                       (self.angle_time(frequency_components[2])) / (
+                       (self.angle_time("β")) / (
                                2 * np.pi), '.',
                        label='β(t)')
         axs[0][0].set_xlim([0, 1])
@@ -633,3 +865,13 @@ class FloquetQubit_alt:
          range(ncols)]
         [axs[r][s].tick_params(axis='both', which='both', labelsize=15) for r in range(nrows) for s in range(ncols)]
         plt.subplots_adjust(top=1.5, hspace=0.5, wspace=0.25)
+
+    def npqt2qtqt(self,vecs):
+        for r in range(len(vecs)):
+
+            if r == 0:
+                vtemp = (vecs[r]).data
+            else:
+                vtemp = hstack((vtemp, (vecs[r]).data))
+
+        return qt.Qobj(vtemp)
